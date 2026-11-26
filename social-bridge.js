@@ -670,6 +670,20 @@
                 return false;
             }
         }
+
+        async getUserProfile() {
+            if (!this.isSocialEnv || !this._canUseVkBridge()) return null;
+            try {
+                const res = await this._sendVkBridgeWithTimeout('VKWebAppGetUserInfo', {}, 4000, 800);
+                if (res && (res.first_name || res.last_name)) {
+                    return {
+                        name: [res.first_name, res.last_name].filter(Boolean).join(' ').trim(),
+                        photo: res.photo_100 || res.photo_200 || ''
+                    };
+                }
+            } catch (_) {}
+            return null;
+        }
     }
 
     window.SocialBridge = SocialBridge;
