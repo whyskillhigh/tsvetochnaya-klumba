@@ -1,9 +1,8 @@
 /**
- * Цветочная Клумба: Узоры Сада (Match-3 + Мой Сад v7.0)
- * - 50+ уровней (50 узорных клумб + Бесконечный Сад) с Картой Клумб и звёздами (1-3 ★)
- * - Бонус-цветы: Match-4 (ряд/столбец + луч), T/L (бомба + волна), Match-5 (Солнечный Лотос)
- * - Мета-игра «Мой Сад»: трать монеты на расчистку и обустройство дачной усадьбы
- * - Оркестровая садовая музыка + хрустальные капли и шелест лепестков
+ * Цветочная Клумба: Узоры Сада (v8.0 — Главное меню + Match-3 с насекомыми и цветами)
+ * - Главное меню с 3 вкладками: «Клумба» (50+ уровней + серия подарков), «Арсенал» (3 бустера), «Лига» (зачёт монет и достижения)
+ * - Бонус-фишки с уникальными модельками: Золотой Шмель (4 в ряд), Пушистый Одуванчик (Т/Г 3x3), Солнечный Лотос (5 в ряд)
+ * - Бустеры: Лейка (3x3), Садовый совок (1 клетка), Свежий ветерок (перемешивание)
  */
 
 (function () {
@@ -570,6 +569,74 @@
     let coins = 100;
     let movesLeft = 25;
     let canBoosterCount = 3;
+    let trowelCount = 2;
+    let shuffleCount = 2;
+    let activeTool = null; // null | 'can' | 'trowel'
+    let shopTargetTool = 'can';
+    let dailyStreak = 0;
+    let dailyLastClaimAt = 0;
+    let claimedAchs = [];
+    let userName = 'Вы (Садовод)';
+    let activeTab = 'tabKlumba';
+    let stats = { totalCoinsEarned: 100, matchesCleared: 0, powerupsCreated: 0, bugsCleared: 0, weedsCleared: 0 };
+
+    const TOOLS_CFG = {
+        can: {
+            title: 'Волшебная лейка',
+            desc: 'Поливает квадрат 3×3: вырывает сорняки, смывает жучков и запускает бонусы.',
+            cost: 150,
+            adAmount: 2
+        },
+        trowel: {
+            title: 'Садовый совок',
+            desc: 'Точечно убирает 1 любую клетку (цветок, сорняк или жучка) без траты хода.',
+            cost: 90,
+            adAmount: 2
+        },
+        shuffle: {
+            title: 'Свежий ветерок',
+            desc: 'Перемешивает все цветы на клумбе и открывает новые комбинации без траты хода.',
+            cost: 110,
+            adAmount: 2
+        }
+    };
+
+    const DAILY_REWARDS = [
+        { day: 1, coins: 100, tool: null, label: '100' },
+        { day: 2, coins: 130, tool: null, label: '130' },
+        { day: 3, coins: 150, tool: 'trowel', label: '150+' },
+        { day: 4, coins: 180, tool: null, label: '180' },
+        { day: 5, coins: 220, tool: 'can', label: '220+' },
+        { day: 6, coins: 260, tool: null, label: '260' },
+        { day: 7, coins: 350, tool: 'can', label: '350+' }
+    ];
+
+    const RANKS = [
+        { score: 0, title: 'Росток' },
+        { score: 250, title: 'Дачник' },
+        { score: 700, title: 'Садовник' },
+        { score: 1500, title: 'Знаток Клумб' },
+        { score: 3000, title: 'Мастер Букетов' },
+        { score: 6000, title: 'Король Сада' }
+    ];
+
+    const NEIGHBORS = [
+        { name: 'Тётя Зина (уч. №4)', score: 420 },
+        { name: 'Дядя Миша (уч. №12)', score: 890 },
+        { name: 'Марина Петровна', score: 1650 },
+        { name: 'Баба Люба (розы)', score: 2900 },
+        { name: 'Агроном Семёныч', score: 4800 }
+    ];
+
+    const ACHIEVEMENTS = [
+        { id: 'match50', title: 'Первый букет (50 цветов)', reward: 60, target: 50, read: () => stats.matchesCleared },
+        { id: 'bugs10', title: 'Гроза жучков (10 жучков)', reward: 100, target: 10, read: () => stats.bugsCleared },
+        { id: 'weeds10', title: 'Чистая грядка (10 сорняков)', reward: 100, target: 10, read: () => stats.weedsCleared },
+        { id: 'power10', title: 'Друг шмелей (10 бонусов)', reward: 120, target: 10, read: () => stats.powerupsCreated },
+        { id: 'coins1000', title: 'Богатый урожай (1000 🪙)', reward: 180, target: 1000, read: () => stats.totalCoinsEarned },
+        { id: 'lvl15', title: 'Знаток сада (15 клумб)', reward: 240, target: 15, read: () => maxLevel + 1 }
+    ];
+
     let isCanMode = false;
     let isProcessingMatches = false;
     let isGameOver = false;
@@ -607,50 +674,34 @@
         coins = bridge.loadCloudProgress('coins', 100);
         bridge.setCoins(coins);
         canBoosterCount = bridge.loadCloudProgress('cans', 3);
-
-        window.klumbaAPI = {
-            getBridge: () => bridge,
-            getCoins: () => coins,
-            setCoins: (val) => {
-                coins = Math.max(0, parseInt(val, 10) || 0);
-                bridge.setCoins(coins);
-                updateUI();
-            },
-            spendCoins: (itemName, price) => {
-                bridge.coins = coins;
-                let ok = false;
-                bridge.makePurchase(itemName, price, () => {
-                    coins = bridge.getCoins();
-                    ok = true;
-                    updateUI();
-                });
-                return ok;
-            },
-            addCoins: (amount, silentToast = false) => {
-                coins += amount;
-                bridge.setCoins(coins);
-                if (!silentToast) bridge.showToast(`+${amount} монет!`);
-                updateUI();
-                return coins;
-            },
-            addCan: (amount = 1) => {
-                canBoosterCount += amount;
-                bridge.saveCloudProgress('cans', canBoosterCount);
-                updateUI();
-            },
-            getLevelNumber: () => currentLevelIdx + 1,
-            getAudio: () => window.flowerAudio
-        };
+        trowelCount = bridge.loadCloudProgress('trowels', 2);
+        shuffleCount = bridge.loadCloudProgress('shuffles', 2);
+        dailyStreak = parseInt(bridge.loadCloudProgress('dailyStreak', 0), 10) || 0;
+        dailyLastClaimAt = parseInt(bridge.loadCloudProgress('dailyLast', 0), 10) || 0;
+        const savedAchs = bridge.loadCloudProgress('achs', []);
+        claimedAchs = Array.isArray(savedAchs) ? savedAchs : [];
+        const savedStats = bridge.loadCloudProgress('stats', null);
+        if (savedStats && typeof savedStats === 'object') {
+            stats = Object.assign(stats, savedStats);
+        }
+        stats.totalCoinsEarned = Math.max(stats.totalCoinsEarned || 0, coins);
 
         initButterflies();
         syncAudioButtons();
         resetLevel(currentLevelIdx);
         setupEvents();
-        if (window.flowerGarden && typeof window.flowerGarden.init === 'function') {
-            window.flowerGarden.init(window.klumbaAPI);
+        openHub('tabKlumba');
+
+        if (typeof bridge.getUserProfile === 'function') {
+            bridge.getUserProfile().then((prof) => {
+                if (prof && prof.name) {
+                    userName = prof.name;
+                    renderHub();
+                }
+            });
         }
 
-        bridge.hydrateCloudProgress(['level', 'maxLevel', 'levelStars', 'coins', 'cans', 'garden'], (hydrated) => {
+        bridge.hydrateCloudProgress(['level', 'maxLevel', 'levelStars', 'coins', 'cans', 'trowels', 'shuffles', 'dailyStreak', 'dailyLast', 'achs', 'stats'], (hydrated) => {
             if (!hydrated || typeof hydrated !== 'object') return;
             let changed = false;
             if (typeof hydrated.coins === 'number' && !Number.isNaN(hydrated.coins)) {
@@ -662,34 +713,51 @@
                 canBoosterCount = hydrated.cans;
                 changed = true;
             }
+            if (typeof hydrated.trowels === 'number' && !Number.isNaN(hydrated.trowels)) {
+                trowelCount = hydrated.trowels;
+                changed = true;
+            }
+            if (typeof hydrated.shuffles === 'number' && !Number.isNaN(hydrated.shuffles)) {
+                shuffleCount = hydrated.shuffles;
+                changed = true;
+            }
+            if (typeof hydrated.dailyStreak === 'number') {
+                dailyStreak = Math.max(dailyStreak, hydrated.dailyStreak);
+                changed = true;
+            }
+            if (typeof hydrated.dailyLast === 'number') {
+                dailyLastClaimAt = Math.max(dailyLastClaimAt, hydrated.dailyLast);
+                changed = true;
+            }
+            if (Array.isArray(hydrated.achs)) {
+                claimedAchs = Array.from(new Set(claimedAchs.concat(hydrated.achs)));
+                changed = true;
+            }
+            if (hydrated.stats && typeof hydrated.stats === 'object') {
+                Object.keys(stats).forEach(k => {
+                    stats[k] = Math.max(stats[k] || 0, hydrated.stats[k] || 0);
+                });
+                changed = true;
+            }
             if (typeof hydrated.maxLevel === 'number' && !Number.isNaN(hydrated.maxLevel)) {
                 maxLevel = Math.max(maxLevel, hydrated.maxLevel);
+                changed = true;
             }
             if (hydrated.levelStars && typeof hydrated.levelStars === 'object') {
                 Object.keys(hydrated.levelStars).forEach((k) => {
                     levelStars[k] = Math.max(levelStars[k] || 0, hydrated.levelStars[k] || 0);
                 });
-            }
-            if (hydrated.garden && window.flowerGarden && typeof window.flowerGarden.onCloudHydrated === 'function') {
-                window.flowerGarden.onCloudHydrated(hydrated.garden);
+                changed = true;
             }
             if (typeof hydrated.level === 'number' && hydrated.level >= 0) {
                 maxLevel = Math.max(maxLevel, hydrated.level);
-                const curCfg = getLevelConfig(currentLevelIdx);
-                const canSwitchLevel = (
-                    hydrated.level !== currentLevelIdx &&
-                    score === 0 &&
-                    movesLeft === curCfg.moves &&
-                    !isProcessingMatches &&
-                    !isGameOver &&
-                    !isWon
-                );
-                if (canSwitchLevel) {
-                    resetLevel(hydrated.level);
-                    return;
-                }
+                currentLevelIdx = hydrated.level;
+                changed = true;
             }
-            if (changed) updateUI();
+            if (changed) {
+                updateUI();
+                renderHub();
+            }
         });
 
         let lastTime = performance.now();
@@ -723,21 +791,256 @@
     }
 
     function syncAudioButtons() {
-        const musicBtn = document.getElementById('musicBtn');
-        const musicIconWrap = document.getElementById('musicIconWrap');
         const musicMuted = window.flowerAudio.isMusicMuted();
-        if (musicBtn && musicIconWrap) {
-            musicIconWrap.innerHTML = musicMuted ? SVG_MUSIC_OFF : SVG_MUSIC_ON;
-            musicBtn.classList.toggle('muted', musicMuted);
+        ['musicBtn', 'hubMusicBtn'].forEach(id => {
+            const btn = document.getElementById(id);
+            const iconWrap = document.getElementById(id === 'musicBtn' ? 'musicIconWrap' : 'hubMusicIconWrap');
+            if (btn && iconWrap) {
+                iconWrap.innerHTML = musicMuted ? SVG_MUSIC_OFF : SVG_MUSIC_ON;
+                btn.classList.toggle('muted', musicMuted);
+            }
+        });
+
+        const soundMuted = window.flowerAudio.isMuted();
+        ['soundBtn', 'hubSoundBtn'].forEach(id => {
+            const btn = document.getElementById(id);
+            const iconWrap = document.getElementById(id === 'soundBtn' ? 'soundIconWrap' : 'hubSoundIconWrap');
+            if (btn && iconWrap) {
+                iconWrap.innerHTML = soundMuted ? SVG_SOUND_OFF : SVG_SOUND_ON;
+                btn.classList.toggle('muted', soundMuted);
+            }
+        });
+    }
+
+    function saveStats() {
+        bridge.saveCloudProgress('stats', stats);
+    }
+
+    function getTotalStarsCount() {
+        return Object.values(levelStars).reduce((acc, v) => acc + (parseInt(v, 10) || 0), 0);
+    }
+
+    function getGardenerRank(scoreVal) {
+        let cur = RANKS[0].title;
+        for (const r of RANKS) {
+            if (scoreVal >= r.score) cur = r.title;
+        }
+        return cur;
+    }
+
+    function isDailyAvailable() {
+        return (Date.now() - dailyLastClaimAt) >= 20 * 3600 * 1000;
+    }
+
+    function switchHubTab(tabId) {
+        activeTab = tabId;
+        ['tabKlumba', 'tabArsenal', 'tabLeague'].forEach(id => {
+            const pane = document.getElementById(id);
+            if (pane) pane.classList.toggle('hidden', id !== tabId);
+        });
+        document.querySelectorAll('.hub-nav-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tab === tabId);
+        });
+        renderHub();
+    }
+
+    function openHub(tabId = 'tabKlumba') {
+        levelToken++;
+        isProcessingMatches = false;
+        isWon = false;
+        isGameOver = false;
+        activeTool = null;
+        isCanMode = false;
+        swapAnim = null;
+
+        ['gameOverModal', 'victoryModal', 'levelsModal', 'boosterShopModal'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('hidden');
+        });
+        document.getElementById('match3Screen').classList.add('hidden');
+        document.getElementById('hubScreen').classList.remove('hidden');
+        switchHubTab(tabId);
+    }
+
+    function startLevel(lvlIdx) {
+        document.getElementById('hubScreen').classList.add('hidden');
+        document.getElementById('match3Screen').classList.remove('hidden');
+        resetLevel(lvlIdx);
+    }
+
+    function renderHub() {
+        const totalStars = getTotalStarsCount();
+        const myLeagueScore = (stats.totalCoinsEarned || 0) + totalStars * 20;
+        const rank = getGardenerRank(myLeagueScore);
+
+        const rankEl = document.getElementById('hubRankText');
+        const hubCoinsEl = document.getElementById('hubCoinsVal');
+        if (rankEl) rankEl.textContent = `Узоры Сада • ${rank}`;
+        if (hubCoinsEl) hubCoinsEl.textContent = coins;
+
+        const playIdx = maxLevel;
+        const curLvl = getLevelConfig(playIdx);
+        const curNameEl = document.getElementById('hubCurrentLevelName');
+        const playBtnTxt = document.getElementById('hubPlayBtnText');
+        const starsEl = document.getElementById('hubTotalStars');
+        if (curNameEl) curNameEl.textContent = `${curLvl.level}. ${curLvl.name}`;
+        if (playBtnTxt) playBtnTxt.textContent = `ИГРАТЬ — УРОВЕНЬ ${curLvl.level}`;
+        if (starsEl) starsEl.textContent = totalStars;
+
+        // Ежедневная серия
+        const dailyAvail = isDailyAvailable();
+        const curDayIdx = dailyStreak % DAILY_REWARDS.length;
+        const dailyDaysEl = document.getElementById('hubDailyDays');
+        const dailyStatusEl = document.getElementById('hubDailyStatus');
+        const dailyBtn = document.getElementById('hubDailyClaimBtn');
+        if (dailyStatusEl) dailyStatusEl.textContent = `Серия: день ${curDayIdx + 1}`;
+        if (dailyBtn) {
+            dailyBtn.disabled = !dailyAvail;
+            dailyBtn.textContent = dailyAvail
+                ? `ЗАБРАТЬ +${DAILY_REWARDS[curDayIdx].coins} МОНЕТ`
+                : 'ПОДАРОК СЕГОДНЯ ПОЛУЧЕН';
+        }
+        if (dailyDaysEl) {
+            dailyDaysEl.innerHTML = '';
+            DAILY_REWARDS.forEach((d, idx) => {
+                const div = document.createElement('div');
+                const isDone = idx < curDayIdx || (!dailyAvail && idx === curDayIdx);
+                const isToday = dailyAvail && idx === curDayIdx;
+                div.className = `daily-day ${isDone ? 'done' : ''} ${isToday ? 'today' : ''}`;
+                div.innerHTML = `<div>Д${d.day}</div><b>${d.label}</b>`;
+                dailyDaysEl.appendChild(div);
+            });
         }
 
-        const soundBtn = document.getElementById('soundBtn');
-        const soundIconWrap = document.getElementById('soundIconWrap');
-        const soundMuted = window.flowerAudio.isMuted();
-        if (soundBtn && soundIconWrap) {
-            soundIconWrap.innerHTML = soundMuted ? SVG_SOUND_OFF : SVG_SOUND_ON;
-            soundBtn.classList.toggle('muted', soundMuted);
+        // Карта уровней в меню
+        const hubGrid = document.getElementById('hubLevelsGrid');
+        const mapSub = document.getElementById('hubMapSummary');
+        const displayCount = Math.max(CAMPAIGN_LEVEL_COUNT, maxLevel + 5);
+        if (mapSub) mapSub.textContent = `Открыто: ${maxLevel + 1} из ${displayCount}`;
+        if (hubGrid) {
+            hubGrid.innerHTML = '';
+            for (let idx = 0; idx < displayCount; idx++) {
+                const lvl = getLevelConfig(idx);
+                const unlocked = idx <= maxLevel;
+                const stars = levelStars[String(idx)] || 0;
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `level-tile ${unlocked ? 'unlocked' : 'locked'} ${idx === playIdx ? 'current' : ''}`;
+                btn.title = `${lvl.level}. ${lvl.name}`;
+                btn.disabled = !unlocked;
+                let starsHtml = '';
+                if (unlocked) {
+                    for (let s = 1; s <= 3; s++) {
+                        const col = s <= stars ? '#ffd54f' : 'rgba(255,255,255,0.22)';
+                        starsHtml += `<svg width="10" height="10" viewBox="0 0 24 24" fill="${col}"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
+                    }
+                } else {
+                    starsHtml = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+                }
+                btn.innerHTML = `<span class="level-tile-num">${lvl.level}</span><span class="level-tile-stars">${starsHtml}</span>`;
+                if (unlocked) {
+                    btn.addEventListener('click', () => startLevel(idx));
+                }
+                hubGrid.appendChild(btn);
+            }
         }
+
+        // Арсенал
+        const cEl = document.getElementById('shopCanStock');
+        const tEl = document.getElementById('shopTrowelStock');
+        const sEl = document.getElementById('shopShuffleStock');
+        if (cEl) cEl.textContent = `${canBoosterCount} шт.`;
+        if (tEl) tEl.textContent = `${trowelCount} шт.`;
+        if (sEl) sEl.textContent = `${shuffleCount} шт.`;
+
+        // Лига и Достижения
+        const profName = document.getElementById('hubProfileName');
+        const profStats = document.getElementById('hubProfileStats');
+        if (profName) profName.textContent = `${userName} • ${rank}`;
+        if (profStats) profStats.textContent = `Собрано всего: ${stats.totalCoinsEarned} 🪙 • Звёзд: ${totalStars} ★`;
+
+        const lbList = document.getElementById('hubLeaderboardList');
+        if (lbList) {
+            const entries = NEIGHBORS.map(n => ({ name: n.name, score: n.score, isMe: false }));
+            entries.push({ name: userName, score: myLeagueScore, isMe: true });
+            entries.sort((a, b) => b.score - a.score);
+            lbList.innerHTML = '';
+            entries.forEach((entry, idx) => {
+                const row = document.createElement('div');
+                row.className = `lb-row ${entry.isMe ? 'me' : ''}`;
+                row.innerHTML = `<span class="lb-pos">${idx + 1}.</span><span class="lb-name">${entry.name}</span><span class="lb-score">${entry.score} очк.</span>`;
+                lbList.appendChild(row);
+            });
+        }
+
+        const achList = document.getElementById('hubAchievementsList');
+        let anyAchClaimable = false;
+        if (achList) {
+            achList.innerHTML = '';
+            ACHIEVEMENTS.forEach(a => {
+                const curVal = Math.min(a.target, a.read());
+                const claimed = claimedAchs.includes(a.id);
+                const ready = !claimed && curVal >= a.target;
+                if (ready) anyAchClaimable = true;
+                const row = document.createElement('div');
+                row.className = 'ach-row';
+                const btnText = claimed ? 'Получено' : (ready ? `+${a.reward} 🪙` : `${curVal}/${a.target}`);
+                const btnCls = claimed ? 'claimed' : (ready ? '' : 'locked');
+                row.innerHTML = `<div class="ach-info"><div class="ach-title">${a.title}</div><div class="ach-prog">Прогресс: ${curVal} / ${a.target}</div></div>`;
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `ach-btn ${btnCls}`;
+                btn.textContent = btnText;
+                btn.disabled = !ready;
+                if (ready) {
+                    btn.addEventListener('click', () => {
+                        if (claimedAchs.includes(a.id)) return;
+                        claimedAchs.push(a.id);
+                        coins += a.reward;
+                        stats.totalCoinsEarned += a.reward;
+                        bridge.setCoins(coins);
+                        bridge.saveCloudProgress('achs', claimedAchs);
+                        saveStats();
+                        window.flowerAudio.playFanfare();
+                        bridge.showToast(`Достижение! +${a.reward} монет`);
+                        updateUI();
+                        renderHub();
+                    });
+                }
+                row.appendChild(btn);
+                achList.appendChild(row);
+            });
+        }
+
+        const dotK = document.getElementById('dotKlumba');
+        const dotL = document.getElementById('dotLeague');
+        if (dotK) dotK.classList.toggle('hidden', !dailyAvail);
+        if (dotL) dotL.classList.toggle('hidden', !anyAchClaimable);
+    }
+
+    function openBoosterShop(toolKey) {
+        shopTargetTool = TOOLS_CFG[toolKey] ? toolKey : 'can';
+        const cfg = TOOLS_CFG[shopTargetTool];
+        document.getElementById('boosterModalTitle').textContent = cfg.title;
+        document.getElementById('boosterModalDesc').textContent = cfg.desc;
+        document.getElementById('buyBoosterCoinsText').textContent = `КУПИТЬ (${cfg.cost} МОНЕТ)`;
+        document.getElementById('getBoosterAdText').textContent = `+${cfg.adAmount} ЗА ВИДЕО`;
+        document.getElementById('boosterShopModal').classList.remove('hidden');
+    }
+
+    function grantTool(toolKey, amount) {
+        if (toolKey === 'can') {
+            canBoosterCount += amount;
+            bridge.saveCloudProgress('cans', canBoosterCount);
+        } else if (toolKey === 'trowel') {
+            trowelCount += amount;
+            bridge.saveCloudProgress('trowels', trowelCount);
+        } else if (toolKey === 'shuffle') {
+            shuffleCount += amount;
+            bridge.saveCloudProgress('shuffles', shuffleCount);
+        }
+        updateUI();
+        renderHub();
     }
 
     function resetLevel(lvlIdx) {
@@ -764,8 +1067,11 @@
         beams = [];
         shockwaves = [];
         isCanMode = false;
+        activeTool = null;
         isProcessingMatches = false;
         document.getElementById('canBtn').classList.remove('active');
+        const trBtn = document.getElementById('trowelBtn');
+        if (trBtn) trBtn.classList.remove('active');
         goalProgress = { flowers: 0, frozenMelted: 0, stonesBroken: 0 };
 
         grid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(null));
@@ -826,6 +1132,8 @@
         popups = [];
         updateUI();
 
+        const bsModal = document.getElementById('boosterShopModal');
+        if (bsModal) bsModal.classList.add('hidden');
         document.getElementById('gameOverModal').classList.add('hidden');
         document.getElementById('victoryModal').classList.add('hidden');
         const levelsModal = document.getElementById('levelsModal');
@@ -906,8 +1214,12 @@
             const cell = grid[r][c];
             if (!cell) return;
 
-            if (isCanMode) {
+            if (activeTool === 'can') {
                 useWateringCan(r, c);
+                return;
+            }
+            if (activeTool === 'trowel') {
+                useTrowel(r, c);
                 return;
             }
 
@@ -977,10 +1289,84 @@
             window.flowerAudio.toggleMusic();
             syncAudioButtons();
         });
+        document.getElementById('hubMusicBtn').addEventListener('click', () => {
+            window.flowerAudio.toggleMusic();
+            syncAudioButtons();
+        });
 
         document.getElementById('soundBtn').addEventListener('click', () => {
             window.flowerAudio.toggleMute();
             syncAudioButtons();
+        });
+        document.getElementById('hubSoundBtn').addEventListener('click', () => {
+            window.flowerAudio.toggleMute();
+            syncAudioButtons();
+        });
+
+        document.getElementById('menuBackBtn').addEventListener('click', () => openHub('tabKlumba'));
+        document.getElementById('goMenuBtn').addEventListener('click', () => openHub('tabKlumba'));
+        document.getElementById('victoryMenuBtn').addEventListener('click', () => openHub('tabKlumba'));
+
+        document.getElementById('hubPlayBtn').addEventListener('click', () => {
+            startLevel(maxLevel);
+        });
+
+        document.querySelectorAll('.hub-nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => switchHubTab(btn.dataset.tab));
+        });
+
+        document.getElementById('hubDailyClaimBtn').addEventListener('click', () => {
+            if (!isDailyAvailable()) return;
+            const d = DAILY_REWARDS[dailyStreak % DAILY_REWARDS.length];
+            dailyStreak++;
+            dailyLastClaimAt = Date.now();
+            coins += d.coins;
+            stats.totalCoinsEarned += d.coins;
+            bridge.setCoins(coins);
+            bridge.saveCloudProgress('dailyStreak', dailyStreak);
+            bridge.saveCloudProgress('dailyLast', dailyLastClaimAt);
+            saveStats();
+            if (d.tool) grantTool(d.tool, 1);
+            window.flowerAudio.playFanfare();
+            bridge.showToast(`День ${d.day}: +${d.coins} монет!`);
+            updateUI();
+            renderHub();
+        });
+
+        document.getElementById('hubShareBtn').addEventListener('click', () => {
+            const msg = `Я играю в «Цветочную Клумбу — Узоры Сада»: пройдено клумб — ${maxLevel + 1}, собрано ${stats.totalCoinsEarned} монет и ${getTotalStarsCount()} звёзд!`;
+            bridge.sharePost(msg).then((ok) => {
+                if (!ok) {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(msg).catch(() => {});
+                    }
+                    bridge.showToast('Текст результата готов — можно делиться с друзьями!');
+                }
+            });
+        });
+
+        document.querySelectorAll('[data-buy-tool]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const key = btn.dataset.buyTool;
+                const cfg = TOOLS_CFG[key];
+                if (!cfg) return;
+                bridge.coins = coins;
+                bridge.makePurchase(cfg.title, cfg.cost, () => {
+                    coins = bridge.getCoins();
+                    grantTool(key, 1);
+                });
+            });
+        });
+
+        document.querySelectorAll('[data-ad-tool]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const key = btn.dataset.adTool;
+                const cfg = TOOLS_CFG[key];
+                if (!cfg) return;
+                bridge.showRewardVideo(() => {
+                    grantTool(key, cfg.adAmount);
+                });
+            });
         });
 
         document.getElementById('restartBtn').addEventListener('click', () => {
@@ -990,48 +1376,56 @@
             bridge.showInterstitialAd(() => resetLevel(currentLevelIdx));
         });
 
-        document.getElementById('canBtn').addEventListener('click', () => {
-            if (canBoosterCount <= 0) {
-                document.getElementById('canModal').classList.remove('hidden');
-                return;
-            }
-            isCanMode = !isCanMode;
-            document.getElementById('canBtn').classList.toggle('active', isCanMode);
+        const setActiveTool = (tool) => {
+            activeTool = activeTool === tool ? null : tool;
+            isCanMode = activeTool === 'can';
+            document.getElementById('canBtn').classList.toggle('active', activeTool === 'can');
+            document.getElementById('trowelBtn').classList.toggle('active', activeTool === 'trowel');
             window.flowerAudio.playSelect();
+        };
+
+        document.getElementById('canBtn').addEventListener('click', () => {
+            if (canBoosterCount <= 0) { openBoosterShop('can'); return; }
+            setActiveTool('can');
+        });
+
+        document.getElementById('trowelBtn').addEventListener('click', () => {
+            if (trowelCount <= 0) { openBoosterShop('trowel'); return; }
+            setActiveTool('trowel');
+        });
+
+        document.getElementById('shuffleBtn').addEventListener('click', () => {
+            if (isProcessingMatches || isGameOver || isWon) return;
+            if (shuffleCount <= 0) { openBoosterShop('shuffle'); return; }
+            useShuffle();
         });
 
         document.getElementById('levelBadge').addEventListener('click', openLevelsModal);
         document.getElementById('closeLevelsModalBtn').addEventListener('click', () => {
             document.getElementById('levelsModal').classList.add('hidden');
         });
-        document.getElementById('victoryLevelsBtn').addEventListener('click', () => {
-            document.getElementById('victoryModal').classList.add('hidden');
-            openLevelsModal();
+
+        document.getElementById('closeBoosterModalBtn').addEventListener('click', () => {
+            document.getElementById('boosterShopModal').classList.add('hidden');
         });
 
-        document.getElementById('closeCanModalBtn').addEventListener('click', () => {
-            document.getElementById('canModal').classList.add('hidden');
-        });
-
-        document.getElementById('buyCanCoinsBtn').addEventListener('click', () => {
+        document.getElementById('buyBoosterCoinsBtn').addEventListener('click', () => {
+            const cfg = TOOLS_CFG[shopTargetTool] || TOOLS_CFG.can;
             bridge.coins = coins;
-            bridge.makePurchase('Волшебная лейка', 150, () => {
+            bridge.makePurchase(cfg.title, cfg.cost, () => {
                 coins = bridge.getCoins();
-                canBoosterCount += 1;
-                bridge.saveCloudProgress('cans', canBoosterCount);
-                document.getElementById('canModal').classList.add('hidden');
-                updateUI();
-                spawnPopup(200, 200, '+1 ЛЕЙКА!', '#ffd54f');
+                grantTool(shopTargetTool, 1);
+                document.getElementById('boosterShopModal').classList.add('hidden');
+                spawnPopup(200, 200, '+1 ИНСТРУМЕНТ!', '#ffd54f');
             });
         });
 
-        document.getElementById('getCanAdBtn').addEventListener('click', () => {
+        document.getElementById('getBoosterAdBtn').addEventListener('click', () => {
+            const cfg = TOOLS_CFG[shopTargetTool] || TOOLS_CFG.can;
             bridge.showRewardVideo(() => {
-                canBoosterCount += 2;
-                bridge.saveCloudProgress('cans', canBoosterCount);
-                updateUI();
-                document.getElementById('canModal').classList.add('hidden');
-                spawnPopup(200, 200, '+2 ЛЕЙКИ!', '#00838f');
+                grantTool(shopTargetTool, cfg.adAmount);
+                document.getElementById('boosterShopModal').classList.add('hidden');
+                spawnPopup(200, 200, `+${cfg.adAmount} ПОЛУЧЕНО!`, '#00838f');
             });
         });
 
@@ -1063,16 +1457,6 @@
             bridge.saveCloudProgress('level', currentLevelIdx);
             bridge.showInterstitialAd(() => resetLevel(currentLevelIdx));
         });
-
-        const victoryGardenBtn = document.getElementById('victoryGardenBtn');
-        if (victoryGardenBtn) {
-            victoryGardenBtn.addEventListener('click', () => {
-                document.getElementById('victoryModal').classList.add('hidden');
-                if (window.flowerGarden && typeof window.flowerGarden.open === 'function') {
-                    window.flowerGarden.open();
-                }
-            });
-        }
     }
 
     function handleCellTap(r, c) {
@@ -1090,6 +1474,13 @@
             const dc = Math.abs(selectedCell.c - c);
 
             if (selectedCell.r === r && selectedCell.c === c) {
+                if (cell.power) {
+                    selectedCell = null;
+                    movesLeft = Math.max(0, movesLeft - 1);
+                    updateUI();
+                    triggerManualBlast([{ r, c, reason: cell.power === 'sun' ? 'sun' : 'power' }]);
+                    return;
+                }
                 selectedCell = null;
                 return;
             }
@@ -1110,6 +1501,7 @@
         canBoosterCount--;
         bridge.saveCloudProgress('cans', canBoosterCount);
         isCanMode = false;
+        activeTool = null;
         idleTime = 0;
         hintPair = null;
         document.getElementById('canBtn').classList.remove('active');
@@ -1154,6 +1546,80 @@
         } else {
             processMatchesCascade(0, null);
         }
+    }
+
+    function useTrowel(r, c) {
+        const cell = grid[r][c];
+        if (!cell) return;
+        trowelCount--;
+        bridge.saveCloudProgress('trowels', trowelCount);
+        activeTool = null;
+        idleTime = 0;
+        hintPair = null;
+        document.getElementById('trowelBtn').classList.remove('active');
+        window.flowerAudio.playDrop();
+        trauma = 0.3;
+
+        if (cell.isStone) {
+            cell.isStone = false;
+            cell.power = null;
+            cell.id = Math.floor(Math.random() * 5);
+            goalProgress.stonesBroken++;
+            stats.weedsCleared++;
+            saveStats();
+            spawnBurst(c * CELL_SIZE + CELL_SIZE / 2, r * CELL_SIZE + CELL_SIZE / 2, '#8bc34a', 14);
+            spawnPopup(c * CELL_SIZE + CELL_SIZE / 2, r * CELL_SIZE + CELL_SIZE / 2, 'ВЫКОПАНО!', '#ffd54f');
+            updateUI();
+            processMatchesCascade(0, null);
+            return;
+        }
+        if (cell.frostLevel > 0) {
+            cell.frostLevel = 0;
+            goalProgress.frozenMelted++;
+            stats.bugsCleared++;
+            saveStats();
+            spawnBurst(c * CELL_SIZE + CELL_SIZE / 2, r * CELL_SIZE + CELL_SIZE / 2, '#ffb300', 14);
+            spawnPopup(c * CELL_SIZE + CELL_SIZE / 2, r * CELL_SIZE + CELL_SIZE / 2, 'УБРАН ЖУК!', '#ff6f00');
+            updateUI();
+            processMatchesCascade(0, null);
+            return;
+        }
+        spawnPopup(c * CELL_SIZE + CELL_SIZE / 2, r * CELL_SIZE + CELL_SIZE / 2, 'СОВКОМ!', '#ffd54f');
+        updateUI();
+        triggerManualBlast([{ r, c, reason: cell.power === 'sun' ? 'sun' : 'power' }]);
+    }
+
+    function useShuffle() {
+        shuffleCount--;
+        bridge.saveCloudProgress('shuffles', shuffleCount);
+        activeTool = null;
+        idleTime = 0;
+        hintPair = null;
+        document.getElementById('canBtn').classList.remove('active');
+        document.getElementById('trowelBtn').classList.remove('active');
+        window.flowerAudio.playRustle();
+
+        const movable = [];
+        for (let r = 0; r < GRID_SIZE; r++) {
+            for (let c = 0; c < GRID_SIZE; c++) {
+                const cell = grid[r][c];
+                if (cell && !cell.isStone && cell.frostLevel === 0 && cell.power !== 'sun' && !cell.power) {
+                    movable.push(cell);
+                }
+            }
+        }
+        for (let attempt = 0; attempt < 25; attempt++) {
+            const ids = movable.map(() => Math.floor(Math.random() * 5));
+            movable.forEach((cell, i) => {
+                cell.id = ids[i];
+                cell.scaleY = 0.78;
+                cell.squashVel = 2.0;
+            });
+            if (findMatches().length === 0 && hasPossibleMove()) break;
+        }
+        spawnBurst(CANVAS_SIZE / 2, CANVAS_SIZE / 2, '#c5e1a5', 22);
+        spawnPopup(CANVAS_SIZE / 2, CANVAS_SIZE / 2, 'СВЕЖИЙ ВЕТЕРОК!', '#2e7d32');
+        updateUI();
     }
 
     function trySwap(p1, p2) {
@@ -1468,13 +1934,17 @@
                     adj.scaleY = 0.68;
                     adj.squashVel = 2.6;
                     goalProgress.stonesBroken++;
+                    stats.weedsCleared++;
                     spawnBurst(ac * CELL_SIZE + CELL_SIZE / 2, ar * CELL_SIZE + CELL_SIZE / 2, '#8bc34a', 14);
                     spawnPopup(ac * CELL_SIZE + CELL_SIZE / 2, ar * CELL_SIZE + CELL_SIZE / 2, 'СОРНЯК ВЫРВАН!', '#ffeb3b');
                 } else if (adj.frostLevel > 0) {
                     adj.frostLevel--;
                     adj.scaleY = 0.72;
                     adj.squashVel = 2.4;
-                    if (adj.frostLevel === 0) goalProgress.frozenMelted++;
+                    if (adj.frostLevel === 0) {
+                        goalProgress.frozenMelted++;
+                        stats.bugsCleared++;
+                    }
                     spawnBurst(ac * CELL_SIZE + CELL_SIZE / 2, ar * CELL_SIZE + CELL_SIZE / 2, '#ffb300', 12);
                     spawnPopup(ac * CELL_SIZE + CELL_SIZE / 2, ar * CELL_SIZE + CELL_SIZE / 2, adj.frostLevel === 0 ? 'ЖУК УЛЕТЕЛ!' : 'СПУГНУЛИ!', '#ff6f00');
                 }
@@ -1497,6 +1967,7 @@
                     cell.scaleY = 0.68;
                     cell.squashVel = 2.6;
                     goalProgress.stonesBroken++;
+                    stats.weedsCleared++;
                     spawnBurst(c * CELL_SIZE + CELL_SIZE / 2, r * CELL_SIZE + CELL_SIZE / 2, '#8bc34a', 12);
                 }
                 return;
@@ -1507,7 +1978,10 @@
                     cell.frostLevel--;
                     cell.scaleY = 0.72;
                     cell.squashVel = 2.4;
-                    if (cell.frostLevel === 0) goalProgress.frozenMelted++;
+                    if (cell.frostLevel === 0) {
+                        goalProgress.frozenMelted++;
+                        stats.bugsCleared++;
+                    }
                     spawnBurst(c * CELL_SIZE + CELL_SIZE / 2, r * CELL_SIZE + CELL_SIZE / 2, '#ffb300', 10);
                 }
                 return;
@@ -1536,10 +2010,14 @@
             cell.id = sp.power === 'sun' ? 99 : sp.flowerId;
             const px = sp.c * CELL_SIZE + CELL_SIZE / 2;
             const py = sp.r * CELL_SIZE + CELL_SIZE / 2;
-            const label = sp.power === 'sun' ? 'ЛОТОС!' : (sp.power === 'bomb' ? 'БОМБА!' : 'ПЧЁЛКА!');
+            const label = sp.power === 'sun' ? 'ЛОТОС!' : (sp.power === 'bomb' ? 'ОДУВАНЧИК!' : 'ШМЕЛЬ!');
             spawnBurst(px, py, '#ffd54f', 16);
             spawnPopup(px, py - 10, label, '#ffe082');
         });
+
+        stats.matchesCleared += clearedCount;
+        stats.powerupsCreated += spawns.length;
+        saveStats();
 
         const mult = Math.min(4, Math.max(1, comboLabel));
         const points = Math.max(30, clearedCount * 15 * mult);
@@ -1698,7 +2176,9 @@
             score += moveBonusScore;
             const totalReward = lvl.reward + moveBonusCoins;
             coins += totalReward;
+            stats.totalCoinsEarned += totalReward;
             bridge.setCoins(coins);
+            saveStats();
 
             const key = String(currentLevelIdx);
             levelStars[key] = Math.max(levelStars[key] || 0, starCount);
@@ -1738,13 +2218,16 @@
         document.getElementById('levelBadgeText').textContent = currentLevelIdx < CAMPAIGN_LEVEL_COUNT
             ? `Ур. ${lvl.level}/${CAMPAIGN_LEVEL_COUNT}: ${lvl.name}`
             : `Ур. ${lvl.level}: ${lvl.name}`;
-        if (window.flowerGarden && typeof window.flowerGarden.syncBadge === 'function') {
-            window.flowerGarden.syncBadge();
-        }
         document.getElementById('scoreVal').textContent = score;
         document.getElementById('coinsVal').textContent = coins;
         document.getElementById('movesText').textContent = `${movesLeft} ходов`;
         document.getElementById('canCountVal').textContent = canBoosterCount;
+        const trEl = document.getElementById('trowelCountVal');
+        const shEl = document.getElementById('shuffleCountVal');
+        const hcEl = document.getElementById('hubCoinsVal');
+        if (trEl) trEl.textContent = trowelCount;
+        if (shEl) shEl.textContent = shuffleCount;
+        if (hcEl) hcEl.textContent = coins;
 
         let curVal = 0, maxVal = 1;
         if (lvl.goalType === 'flower') {
@@ -1836,26 +2319,22 @@
                     const p1 = swapAnim.p1;
                     const p2 = swapAnim.p2;
 
-                    // Особые обмены: Солнечный Лотос или два бонуса сразу
-                    if (s1.power === 'sun' || s2.power === 'sun') {
+                    // Особые обмены: Шмель, Одуванчик или Солнечный Лотос взрываются при любом обмене!
+                    if (s1.power || s2.power) {
                         movesLeft = Math.max(0, movesLeft - 1);
                         swapAnim = null;
                         updateUI();
-                        const sunPos = s1.power === 'sun' ? p2 : p1;
-                        const partner = s1.power === 'sun' ? s2 : s1;
-                        const sunTarget = (s1.power === 'sun' && s2.power === 'sun') ? 'ALL' : partner.id;
-                        triggerManualBlast([{ r: sunPos.r, c: sunPos.c, reason: 'sun' }], sunTarget);
-                        return;
-                    }
-
-                    if (s1.power && s2.power) {
-                        movesLeft = Math.max(0, movesLeft - 1);
-                        swapAnim = null;
-                        updateUI();
-                        triggerManualBlast([
-                            { r: p1.r, c: p1.c, reason: 'power' },
-                            { r: p2.r, c: p2.c, reason: 'power' }
-                        ]);
+                        if (s1.power === 'sun' || s2.power === 'sun') {
+                            const sunPos = s1.power === 'sun' ? p2 : p1;
+                            const partner = s1.power === 'sun' ? s2 : s1;
+                            const sunTarget = (s1.power === 'sun' && s2.power === 'sun') ? 'ALL' : partner.id;
+                            triggerManualBlast([{ r: sunPos.r, c: sunPos.c, reason: 'sun' }], sunTarget);
+                        } else {
+                            const seeds = [];
+                            if (s1.power) seeds.push({ r: p2.r, c: p2.c, reason: 'power' });
+                            if (s2.power) seeds.push({ r: p1.r, c: p1.c, reason: 'power' });
+                            triggerManualBlast(seeds);
+                        }
                         return;
                     }
 
@@ -2200,7 +2679,12 @@
                         ctx.drawImage(stoneSprite, -CELL_SIZE * 0.45, -CELL_SIZE * 0.45, CELL_SIZE * 0.9, CELL_SIZE * 0.9);
                     }
                 } else {
-                    const sprite = window.flowerSprites.get(cell.id);
+                    const spriteId = cell.power === 'row' ? 95
+                        : cell.power === 'col' ? 96
+                        : cell.power === 'bomb' ? 97
+                        : cell.power === 'sun' ? 99
+                        : cell.id;
+                    const sprite = window.flowerSprites.get(spriteId);
                     if (sprite) {
                         ctx.drawImage(sprite, -CELL_SIZE * 0.45, -CELL_SIZE * 0.45, CELL_SIZE * 0.9, CELL_SIZE * 0.9);
                     }
