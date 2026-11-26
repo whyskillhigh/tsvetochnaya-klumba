@@ -9,166 +9,283 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Rubik:wght@600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=7.0">
+    <link rel="stylesheet" href="style.css?v=8.0">
 </head>
 <body>
     <div class="garden-backdrop">
         <main class="game-viewport">
-            <div id="match3Screen" class="screen-pane">
-            <header class="header">
-                <div class="header-top">
-                    <button type="button" class="level-badge" id="levelBadge" title="Открыть карту клумб">
-                        <svg class="svg-icon" viewBox="0 0 24 24" fill="none">
-                            <circle cx="12" cy="7" r="3.5" fill="#f48fb1" stroke="#fff" stroke-width="1.3"/>
-                            <circle cx="16.8" cy="10.5" r="3.5" fill="#f48fb1" stroke="#fff" stroke-width="1.3"/>
-                            <circle cx="15" cy="16" r="3.5" fill="#f48fb1" stroke="#fff" stroke-width="1.3"/>
-                            <circle cx="9" cy="16" r="3.5" fill="#f48fb1" stroke="#fff" stroke-width="1.3"/>
-                            <circle cx="7.2" cy="10.5" r="3.5" fill="#f48fb1" stroke="#fff" stroke-width="1.3"/>
-                            <circle cx="12" cy="12" r="3.2" fill="#ffd54f"/>
-                        </svg>
-                        <span id="levelBadgeText">Ур. 1/20: Палисадник</span>
-                        <svg class="svg-icon xs badge-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-                    </button>
-                    <div class="header-actions">
-                        <button id="musicBtn" class="btn-small" title="Музыка">
-                            <span class="btn-svg" id="musicIconWrap">
-                                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-                            </span>
-                            <span class="btn-txt">Музыка</span>
-                        </button>
-                        <button id="soundBtn" class="btn-small" title="Звуки">
-                            <span class="btn-svg" id="soundIconWrap">
-                                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-                            </span>
-                            <span class="btn-txt">Звуки</span>
-                        </button>
-                        <button id="restartBtn" class="btn-small icon-only" title="Начать заново" aria-label="Начать заново">
-                            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-                        </button>
-                    </div>
-                </div>
 
-                <!-- Плашка текущей цели уровня -->
-                <div class="goal-card">
-                    <div class="goal-info">
-                        <span class="goal-title-wrap">
-                            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="#ffeb3b" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1.5" fill="#ffeb3b"/></svg>
-                            <span class="goal-title" id="goalTitle">Собери 18 Ромашек</span>
-                        </span>
-                        <span class="moves-badge" id="movesBadge">
-                            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
-                            <span id="movesText">25 ходов</span>
-                        </span>
-                    </div>
-                    <div class="goal-progress-wrap">
-                        <div class="goal-progress-bar" id="goalProgressBar" style="width: 0%;"></div>
-                        <span class="goal-progress-text" id="goalProgressText">0 / 18</span>
-                    </div>
-                </div>
-
-                <div class="stats-row">
-                    <div class="stat-box">
-                        <div class="stat-label">
-                            <svg class="svg-icon xs" viewBox="0 0 24 24" fill="#ffe082"><polygon points="12 2 15 9 22 9.5 16.5 14.5 18.2 21.5 12 17.8 5.8 21.5 7.5 14.5 2 9.5 9 9"/></svg>
-                            <span>ОЧКИ</span>
+            <!-- ГЛАВНОЕ МЕНЮ (Поверх живописного фона сада bg.jpg) -->
+            <section id="hubScreen" class="screen-pane hub-screen" aria-label="Главное меню">
+                <header class="hub-header">
+                    <div class="hub-brand">
+                        <div class="hub-logo-medallion" aria-hidden="true">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="6.5" r="3.6" fill="#ffca28" stroke="#fff" stroke-width="1.2"/>
+                                <circle cx="17.2" cy="10.3" r="3.6" fill="#ff80ab" stroke="#fff" stroke-width="1.2"/>
+                                <circle cx="15.2" cy="16.4" r="3.6" fill="#4fc3f7" stroke="#fff" stroke-width="1.2"/>
+                                <circle cx="8.8" cy="16.4" r="3.6" fill="#ab47bc" stroke="#fff" stroke-width="1.2"/>
+                                <circle cx="6.8" cy="10.3" r="3.6" fill="#ff7043" stroke="#fff" stroke-width="1.2"/>
+                                <circle cx="12" cy="12" r="3.5" fill="#fff176" stroke="#f57f17" stroke-width="1.2"/>
+                            </svg>
                         </div>
-                        <div id="scoreVal" class="stat-val">0</div>
+                        <div class="hub-brand-text">
+                            <div class="hub-title">Цветочная Клумба</div>
+                            <div class="hub-rank" id="hubRankText">Узоры Сада • Садовник</div>
+                        </div>
                     </div>
-                    <div class="stat-box">
-                        <div class="stat-label">
+                    <div class="hub-top-right">
+                        <div class="hub-coins-pill" title="Монеты">
                             <svg class="svg-icon xs" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#ffb300" stroke="#ffe082" stroke-width="2"/><circle cx="12" cy="12" r="5" fill="#e65100"/></svg>
-                            <span>МОНЕТЫ</span>
+                            <span id="hubCoinsVal">100</span>
                         </div>
-                        <div id="coinsVal" class="stat-val">100</div>
-                    </div>
-                </div>
-            </header>
-
-            <div class="canvas-wrapper">
-                <canvas id="match3Canvas" width="400" height="400"></canvas>
-            </div>
-
-            <footer class="controls">
-                <button id="canBtn" class="big-btn">
-                    <svg class="svg-icon lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M7 11h9v8a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-8z" fill="currentColor" fill-opacity="0.25"/>
-                        <path d="M16 12c2.5 0 4-1.5 4-4v-1"/>
-                        <path d="M7 14l-4-4-1.5 1.5"/>
-                        <path d="M10 11V8a3 3 0 0 1 6 0v3"/>
-                    </svg>
-                    <span>Лейка (<span id="canCountVal">3</span>)</span>
-                </button>
-                <button id="openGardenBtn" class="big-btn warm-orange garden-tab-btn">
-                    <svg class="svg-icon lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M3 10.5 12 3l9 7.5"/>
-                        <path d="M5 10v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-9"/>
-                        <path d="M9 20v-6h6v6"/>
-                    </svg>
-                    <span>Мой Сад</span>
-                    <span id="gardenBadgeDot" class="notify-dot hidden" aria-hidden="true"></span>
-                </button>
-            </footer>
-            </div>
-
-            <!-- Экран «Мой Сад» (мета-игра дачной усадьбы) -->
-            <section id="gardenScreen" class="screen-pane hidden" aria-label="Моя Дачная Усадьба">
-                <header class="header garden-header">
-                    <div class="header-top" style="margin-bottom: 0;">
-                        <span class="level-badge static-badge">
-                            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="#ffd54f" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-9"/></svg>
-                            <span id="gardenStagePill">Усадьба: 0/8</span>
-                        </span>
-                        <div class="garden-coins-pill">
-                            <svg class="svg-icon xs" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#ffb300" stroke="#ffe082" stroke-width="2"/><circle cx="12" cy="12" r="5" fill="#e65100"/></svg>
-                            <span id="gardenCoinsVal">100</span>
-                        </div>
-                        <button type="button" id="gardenBackBtn" class="btn-small garden-play-btn">
-                            <svg class="svg-icon" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
-                            <span>Уровни</span>
+                        <button type="button" id="hubMusicBtn" class="btn-small icon-only" title="Музыка" aria-label="Музыка">
+                            <span class="btn-svg" id="hubMusicIconWrap"></span>
+                        </button>
+                        <button type="button" id="hubSoundBtn" class="btn-small icon-only" title="Звуки" aria-label="Звуки">
+                            <span class="btn-svg" id="hubSoundIconWrap"></span>
                         </button>
                     </div>
                 </header>
 
-                <div class="garden-canvas-wrap">
-                    <canvas id="gardenCanvas" width="400" height="270"></canvas>
-                </div>
+                <div class="hub-scroll-body">
+                    <!-- Вкладка 1: КЛУМБА (Герой-карточка, ежедневная серия и карта 50+ уровней) -->
+                    <div id="tabKlumba" class="hub-tab-pane">
+                        <div class="glass-card hero-play-card">
+                            <div class="hero-card-top">
+                                <div>
+                                    <div class="hero-kicker">ТЕКУЩАЯ КЛУМБА</div>
+                                    <div class="hero-level-name" id="hubCurrentLevelName">1. Палисадник</div>
+                                </div>
+                                <div class="hero-stars-pill" id="hubStarsPill">
+                                    <svg class="svg-icon xs" viewBox="0 0 24 24" fill="#ffd54f"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                    <span id="hubTotalStars">0</span>
+                                </div>
+                            </div>
+                            <button type="button" id="hubPlayBtn" class="big-btn hero-play-btn">
+                                <svg class="svg-icon lg" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+                                <span id="hubPlayBtnText">ИГРАТЬ — УРОВЕНЬ 1</span>
+                            </button>
+                        </div>
 
-                <div class="garden-panel">
-                    <div class="garden-task-box">
-                        <div class="garden-task-title" id="gardenTaskTitle">Шаг 1/8: Расчистить старый бурьян</div>
-                        <div class="garden-task-desc" id="gardenTaskDesc">Убери сорняки и камни, чтобы разбить свежий весенний газон.</div>
-                        <div id="gardenChoicesWrap" class="garden-choices-wrap"></div>
-                        <button type="button" id="gardenUpgradeBtn" class="big-btn coin-gold" style="margin-top: 8px; width: 100%; height: 44px; font-size: 15.5px;">
-                            <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#ffe082" stroke="#5d4037" stroke-width="2"/><circle cx="12" cy="12" r="5" fill="#ef6c00"/></svg>
-                            <span id="gardenUpgradeBtnText">УЛУЧШИТЬ — 80 МОНЕТ</span>
-                        </button>
+                        <!-- Ежедневная серия садовода (7 дней) -->
+                        <div class="glass-card daily-card">
+                            <div class="daily-card-head">
+                                <div class="daily-title">
+                                    <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="#ffd54f" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/></svg>
+                                    <span>Подарки садовода</span>
+                                </div>
+                                <span class="daily-streak-pill" id="hubDailyStatus">Серия: день 1</span>
+                            </div>
+                            <div class="daily-days-row" id="hubDailyDays"></div>
+                            <button type="button" id="hubDailyClaimBtn" class="big-btn coin-gold daily-claim-btn">ЗАБРАТЬ ПОДАРОК ДНЯ</button>
+                        </div>
+
+                        <!-- Встроенная карта уровней -->
+                        <div class="glass-card map-card">
+                            <div class="map-card-head">
+                                <span class="map-card-title">Карта клумб (50+ уровней)</span>
+                                <span class="map-card-sub" id="hubMapSummary">Открыто: 1</span>
+                            </div>
+                            <div id="hubLevelsGrid" class="levels-grid hub-levels-grid"></div>
+                        </div>
                     </div>
 
-                    <div class="garden-perks-row">
-                        <button type="button" id="gardenDailyBtn" class="perk-btn">
-                            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/></svg>
-                            <span id="gardenDailyText">Подарок дня!</span>
-                        </button>
-                        <button type="button" id="gardenHarvestBtn" class="perk-btn harvest">
-                            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11h14l-1.5 8h-11z"/><path d="M8 11 12 4l4 7"/></svg>
-                            <span id="gardenHarvestText">Урожай с 1 этапа</span>
-                        </button>
+                    <!-- Вкладка 2: АРСЕНАЛ (Покупка 3 бустеров за монеты + шпаргалка по Шмелю/Одуванчику/Лотосу) -->
+                    <div id="tabArsenal" class="hub-tab-pane hidden">
+                        <div class="glass-card arsenal-intro">
+                            <div class="arsenal-h">Садовый Арсенал</div>
+                            <p class="arsenal-sub">Трать собранные монеты на инструменты для сложных клумб или пополняй запас за видео.</p>
+                        </div>
+
+                        <div class="glass-card tool-card">
+                            <div class="tool-icon can">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#80deea" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11h9v8a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-8z" fill="#4dd0e1" fill-opacity="0.3"/><path d="M16 12c2.5 0 4-1.5 4-4v-1"/><path d="M7 14l-4-4-1.5 1.5"/><path d="M10 11V8a3 3 0 0 1 6 0v3"/></svg>
+                            </div>
+                            <div class="tool-info">
+                                <div class="tool-name">Волшебная лейка <span class="tool-stock" id="shopCanStock">3 шт.</span></div>
+                                <div class="tool-desc">Поливает квадрат 3×3: вырывает сорняки и смывает жучков.</div>
+                                <div class="tool-actions">
+                                    <button type="button" class="mini-buy-btn gold" data-buy-tool="can">За 150 🪙</button>
+                                    <button type="button" class="mini-buy-btn green" data-ad-tool="can">+2 (Видео)</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="glass-card tool-card">
+                            <div class="tool-icon trowel">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ffcc80" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4l6 6-7 7-6-6 7-7z" fill="#ffb300" fill-opacity="0.32"/><path d="M7 17l-4 4"/><path d="M9.5 14.5l-2.5 2.5"/></svg>
+                            </div>
+                            <div class="tool-info">
+                                <div class="tool-name">Садовый совок <span class="tool-stock" id="shopTrowelStock">2 шт.</span></div>
+                                <div class="tool-desc">Убирает 1 любую клетку (цветок, сорняк или жука) без траты хода.</div>
+                                <div class="tool-actions">
+                                    <button type="button" class="mini-buy-btn gold" data-buy-tool="trowel">За 90 🪙</button>
+                                    <button type="button" class="mini-buy-btn green" data-ad-tool="trowel">+2 (Видео)</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="glass-card tool-card">
+                            <div class="tool-icon shuffle">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c5e1a5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12c3-4 6-4 9 0s6 4 9 0"/><path d="M4 7c2.5-3 5-3 7.5 0s5 3 7.5 0"/><path d="M4 17c2.5-3 5-3 7.5 0s5 3 7.5 0"/></svg>
+                            </div>
+                            <div class="tool-info">
+                                <div class="tool-name">Свежий ветерок <span class="tool-stock" id="shopShuffleStock">2 шт.</span></div>
+                                <div class="tool-desc">Перемешивает все цветы на поле для поиска лучших ходов.</div>
+                                <div class="tool-actions">
+                                    <button type="button" class="mini-buy-btn gold" data-buy-tool="shuffle">За 110 🪙</button>
+                                    <button type="button" class="mini-buy-btn green" data-ad-tool="shuffle">+2 (Видео)</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="glass-card bonus-guide-card">
+                            <div class="map-card-title" style="margin-bottom: 6px;">Особые обитатели клумбы</div>
+                            <div class="guide-row"><b>4 в ряд → Золотой Шмель:</b> пролетает и чистит весь ряд или столбец.</div>
+                            <div class="guide-row"><b>Т или Г → Пушистый Одуванчик:</b> разлетается пухом во все стороны (3×3).</div>
+                            <div class="guide-row"><b>5 в ряд → Солнечный Лотос:</b> собирает все цветы одного сорта с поля!</div>
+                        </div>
+                    </div>
+
+                    <!-- Вкладка 3: ЛИГА (Соседи по даче по монетам + Достижения с наградами) -->
+                    <div id="tabLeague" class="hub-tab-pane hidden">
+                        <div class="glass-card profile-card">
+                            <div class="profile-top">
+                                <div>
+                                    <div class="profile-name" id="hubProfileName">Садовод</div>
+                                    <div class="profile-sub" id="hubProfileStats">Собрано всего: 100 🪙 • Звёзд: 0 ★</div>
+                                </div>
+                                <button type="button" id="hubShareBtn" class="mini-buy-btn green">Поделиться</button>
+                            </div>
+                        </div>
+
+                        <div class="glass-card league-card">
+                            <div class="map-card-head">
+                                <span class="map-card-title">Соседи по даче (Зачёт по монетам)</span>
+                            </div>
+                            <div id="hubLeaderboardList" class="leaderboard-list"></div>
+                        </div>
+
+                        <div class="glass-card achievements-card">
+                            <div class="map-card-head">
+                                <span class="map-card-title">Садовые достижения</span>
+                            </div>
+                            <div id="hubAchievementsList" class="achievements-list"></div>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Нижняя панель переключения 3 вкладок Главного меню -->
+                <nav class="hub-nav" aria-label="Разделы игры">
+                    <button type="button" class="hub-nav-btn active" data-tab="tabKlumba">
+                        <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="7" r="3"/><circle cx="16.5" cy="11" r="3"/><circle cx="14.5" cy="16.5" r="3"/><circle cx="9.5" cy="16.5" r="3"/><circle cx="7.5" cy="11" r="3"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/></svg>
+                        <span>Клумба</span>
+                        <span id="dotKlumba" class="notify-dot hidden" aria-hidden="true"></span>
+                    </button>
+                    <button type="button" class="hub-nav-btn" data-tab="tabArsenal">
+                        <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M14 4l6 6-7 7-6-6 7-7z"/><path d="M7 17l-4 4"/></svg>
+                        <span>Арсенал</span>
+                    </button>
+                    <button type="button" class="hub-nav-btn" data-tab="tabLeague">
+                        <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 9H4a2 2 0 0 1-2-2V5h4"/><path d="M18 9h2a2 2 0 0 0 2-2V5h-4"/><path d="M6 4h12v6a6 6 0 0 1-12 0V4z"/><path d="M12 16v4"/><path d="M8 20h8"/></svg>
+                        <span>Лига</span>
+                        <span id="dotLeague" class="notify-dot hidden" aria-hidden="true"></span>
+                    </button>
+                </nav>
             </section>
 
-            <!-- Правовая информация для модерации VK / OK -->
+            <!-- ЭКРАН УРОВНЯ MATCH-3 -->
+            <section id="match3Screen" class="screen-pane hidden" aria-label="Игровое поле">
+                <header class="header">
+                    <div class="header-top">
+                        <button type="button" class="btn-small menu-back-btn" id="menuBackBtn" title="В главное меню">
+                            <svg class="svg-icon xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+                            <span>Меню</span>
+                        </button>
+                        <button type="button" class="level-badge" id="levelBadge" title="Карта клумб">
+                            <span id="levelBadgeText">Ур. 1/50: Палисадник</span>
+                        </button>
+                        <div class="header-actions">
+                            <button id="musicBtn" class="btn-small icon-only" title="Музыка" aria-label="Музыка">
+                                <span class="btn-svg" id="musicIconWrap"></span>
+                            </button>
+                            <button id="soundBtn" class="btn-small icon-only" title="Звуки" aria-label="Звуки">
+                                <span class="btn-svg" id="soundIconWrap"></span>
+                            </button>
+                            <button id="restartBtn" class="btn-small icon-only" title="Начать заново" aria-label="Начать заново">
+                                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="goal-card">
+                        <div class="goal-info">
+                            <span class="goal-title-wrap">
+                                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="#ffeb3b" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1.5" fill="#ffeb3b"/></svg>
+                                <span class="goal-title" id="goalTitle">Собери 18 Ромашек</span>
+                            </span>
+                            <span class="moves-badge" id="movesBadge">
+                                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
+                                <span id="movesText">25 ходов</span>
+                            </span>
+                        </div>
+                        <div class="goal-progress-wrap">
+                            <div class="goal-progress-bar" id="goalProgressBar" style="width: 0%;"></div>
+                            <span class="goal-progress-text" id="goalProgressText">0 / 18</span>
+                        </div>
+                    </div>
+
+                    <div class="stats-row">
+                        <div class="stat-box">
+                            <div class="stat-label">
+                                <svg class="svg-icon xs" viewBox="0 0 24 24" fill="#ffe082"><polygon points="12 2 15 9 22 9.5 16.5 14.5 18.2 21.5 12 17.8 5.8 21.5 7.5 14.5 2 9.5 9 9"/></svg>
+                                <span>ОЧКИ</span>
+                            </div>
+                            <div id="scoreVal" class="stat-val">0</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">
+                                <svg class="svg-icon xs" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#ffb300" stroke="#ffe082" stroke-width="2"/><circle cx="12" cy="12" r="5" fill="#e65100"/></svg>
+                                <span>МОНЕТЫ</span>
+                            </div>
+                            <div id="coinsVal" class="stat-val">100</div>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="canvas-wrapper">
+                    <canvas id="match3Canvas" width="400" height="400"></canvas>
+                </div>
+
+                <footer class="controls game-boosters-bar">
+                    <button type="button" id="canBtn" class="booster-btn" title="Полить 3x3">
+                        <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="#80deea" stroke-width="2.2" stroke-linecap="round"><path d="M7 11h9v8a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-8z"/><path d="M16 12c2.5 0 4-1.5 4-4v-1"/><path d="M7 14l-4-4-1.5 1.5"/></svg>
+                        <span>Лейка (<b id="canCountVal">3</b>)</span>
+                    </button>
+                    <button type="button" id="trowelBtn" class="booster-btn" title="Убрать 1 клетку">
+                        <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="#ffcc80" stroke-width="2.2" stroke-linecap="round"><path d="M14 4l6 6-7 7-6-6 7-7z"/><path d="M7 17l-4 4"/></svg>
+                        <span>Совок (<b id="trowelCountVal">2</b>)</span>
+                    </button>
+                    <button type="button" id="shuffleBtn" class="booster-btn" title="Перемешать поле">
+                        <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="#c5e1a5" stroke-width="2.2" stroke-linecap="round"><path d="M2 12c3-4 6-4 9 0s6 4 9 0"/><path d="M4 7c2.5-3 5-3 7.5 0s5 3 7.5 0"/></svg>
+                        <span>Ветерок (<b id="shuffleCountVal">2</b>)</span>
+                    </button>
+                </footer>
+            </section>
+
+            <!-- Правовая информация -->
             <nav class="legal-footer" aria-label="Правовая информация">
                 <a href="privacy.html">Политика конфиденциальности</a>
                 <span class="legal-sep" aria-hidden="true">•</span>
                 <a href="terms.html">Пользовательское соглашение</a>
             </nav>
 
-            <!-- Модалка поражения (кончились ходы) -->
+            <!-- Модалка поражения -->
             <div id="gameOverModal" class="modal-overlay hidden">
                 <div class="modal-card">
                     <div class="modal-hero-svg">
-                        <svg viewBox="0 0 64 64" width="60" height="60" fill="none">
+                        <svg viewBox="0 0 64 64" width="58" height="58" fill="none">
                             <circle cx="32" cy="32" r="28" fill="#4e342e" stroke="#ffb300" stroke-width="3"/>
                             <path d="M32 48V24" stroke="#81c784" stroke-width="3.5" stroke-linecap="round"/>
                             <path d="M32 24c-8-6-16 0-12 8s12 2 12-8z" fill="#f48fb1" stroke="#ad1457" stroke-width="2"/>
@@ -177,28 +294,24 @@
                         </svg>
                     </div>
                     <h2 class="modal-title">Ходы закончились!</h2>
-                    <p class="modal-desc">
-                        Цветы еще не успели распуститься.<br>
-                        Посмотрите короткое видео, чтобы получить +5 ходов и завершить клумбу!
-                    </p>
-                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <p class="modal-desc">Добавьте ещё +5 ходов, чтобы завершить клумбу, или вернитесь на карту.</p>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
                         <button id="adReviveBtn" class="big-btn warm-orange">
                             <svg class="svg-icon lg" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
                             <span>+5 ХОДОВ (ВИДЕО)</span>
                         </button>
                         <button id="buyMovesCoinsBtn" class="big-btn coin-gold">
-                            <svg class="svg-icon lg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#ffe082" stroke="#5d4037" stroke-width="2"/><circle cx="12" cy="12" r="5" fill="#ef6c00"/></svg>
                             <span>+5 ХОДОВ — 200 МОНЕТ</span>
                         </button>
-                        <button id="goRestartBtn" class="big-btn wood-secondary">
-                            <svg class="svg-icon lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-                            <span>НАЧАТЬ ЗАНОВО</span>
-                        </button>
+                        <div style="display: flex; gap: 8px;">
+                            <button id="goRestartBtn" class="big-btn wood-secondary" style="font-size: 14px; height: 42px;">ЗАНОВО</button>
+                            <button id="goMenuBtn" class="big-btn wood-secondary" style="font-size: 14px; height: 42px;">В МЕНЮ</button>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Модалка ПОБЕДЫ (1-3 звезды SVG) -->
+            <!-- Модалка ПОБЕДЫ -->
             <div id="victoryModal" class="modal-overlay hidden">
                 <div class="modal-card">
                     <div class="stars-row" id="victoryStars"></div>
@@ -211,70 +324,53 @@
                             <b id="victoryRewardText">+150</b>
                         </span>
                     </p>
-                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
                         <button id="nextLevelBtn" class="big-btn">
                             <svg class="svg-icon lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                             <span id="nextLevelBtnText">СЛЕДУЮЩАЯ КЛУМБА</span>
                         </button>
-                        <div style="display: flex; gap: 8px;">
-                            <button id="victoryGardenBtn" class="big-btn warm-orange" style="font-size: 14px; height: 42px;">
-                                <span>МОЙ САД</span>
-                            </button>
-                            <button id="victoryLevelsBtn" class="big-btn wood-secondary" style="font-size: 14px; height: 42px;">
-                                <span>КАРТА КЛУМБ</span>
-                            </button>
-                        </div>
+                        <button id="victoryMenuBtn" class="big-btn wood-secondary" style="font-size: 15px; height: 42px;">НА КАРТУ КЛУМБ</button>
                     </div>
                 </div>
             </div>
 
-            <!-- Модалка лейки -->
-            <div id="canModal" class="modal-overlay hidden">
+            <!-- Универсальная модалка пополнения бустера (Лейка / Совок / Ветерок) -->
+            <div id="boosterShopModal" class="modal-overlay hidden">
                 <div class="modal-card">
-                    <button id="closeCanModalBtn" class="modal-close" aria-label="Закрыть">
+                    <button id="closeBoosterModalBtn" class="modal-close" aria-label="Закрыть">
                         <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
-                    <div class="modal-hero-svg">
-                        <svg viewBox="0 0 64 64" width="56" height="56" fill="none">
-                            <circle cx="32" cy="32" r="28" fill="#2e5926" stroke="#80deea" stroke-width="3"/>
-                            <path d="M22 30h18v14a3 3 0 0 1-3 3H25a3 3 0 0 1-3-3V30z" fill="#4dd0e1" stroke="#fff" stroke-width="2"/>
-                            <path d="M26 30v-6a5 5 0 0 1 10 0v6" stroke="#fff" stroke-width="2.5"/>
-                            <path d="M22 36l-8-7" stroke="#80deea" stroke-width="3.5" stroke-linecap="round"/>
-                        </svg>
-                    </div>
-                    <h2 class="modal-title">Волшебная лейка</h2>
-                    <p class="modal-desc">Лейка поливает квадрат 3x3: вырывает сорняки, прогоняет жучков и запускает бонусы! Купите за монеты или посмотрите видео.</p>
+                    <h2 class="modal-title" id="boosterModalTitle">Волшебная лейка</h2>
+                    <p class="modal-desc" id="boosterModalDesc">Лейка поливает квадрат 3×3: вырывает сорняки и прогоняет жучков!</p>
                     <div style="display: flex; flex-direction: column; gap: 10px;">
-                        <button id="buyCanCoinsBtn" class="big-btn coin-gold">
-                            <svg class="svg-icon lg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#ffe082" stroke="#5d4037" stroke-width="2"/><circle cx="12" cy="12" r="5" fill="#ef6c00"/></svg>
-                            <span>КУПИТЬ (150 МОНЕТ)</span>
+                        <button id="buyBoosterCoinsBtn" class="big-btn coin-gold">
+                            <span id="buyBoosterCoinsText">КУПИТЬ (150 МОНЕТ)</span>
                         </button>
-                        <button id="getCanAdBtn" class="big-btn">
+                        <button id="getBoosterAdBtn" class="big-btn">
                             <svg class="svg-icon lg" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
-                            <span>+2 ЛЕЙКИ (ВИДЕО)</span>
+                            <span id="getBoosterAdText">+2 ЗА ВИДЕО</span>
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Карта клумб (выбор любого открытого уровня из 20) -->
+            <!-- Карта клумб (выбор уровня прямо из игры) -->
             <div id="levelsModal" class="modal-overlay hidden">
                 <div class="modal-card levels-modal-card">
                     <button id="closeLevelsModalBtn" class="modal-close" aria-label="Закрыть">
                         <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
                     <h2 class="modal-title" style="color: #ffe082;">Карта Клумб</h2>
-                    <p class="modal-desc" id="levelsSummaryText" style="margin-bottom: 10px;">Открыто клумб: 1 из 50 • Звёзд: 0/150</p>
+                    <p class="modal-desc" id="levelsSummaryText" style="margin-bottom: 10px;">Открыто клумб: 1 из 50</p>
                     <div id="levelsGrid" class="levels-grid"></div>
                 </div>
             </div>
         </main>
     </div>
 
-    <script src="social-bridge.js?v=7.0"></script>
-    <script src="audio.js?v=7.0"></script>
-    <script src="sprites.js?v=7.0"></script>
-    <script src="garden.js?v=7.0"></script>
-    <script src="game.js?v=7.0"></script>
+    <script src="social-bridge.js?v=8.0"></script>
+    <script src="audio.js?v=8.0"></script>
+    <script src="sprites.js?v=8.0"></script>
+    <script src="game.js?v=8.0"></script>
 </body>
 </html>
