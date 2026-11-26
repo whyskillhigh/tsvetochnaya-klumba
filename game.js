@@ -1,8 +1,8 @@
 /**
- * Цветочная Клумба: Узоры Сада (Match-3 v6.0)
- * - 20 фигурных уровней с картой клумб и сохранением звёзд (1-3 ★)
- * - Бонус-цветы: Match-4 (ряд/столбец), T/L (букет-бомба 3x3), Match-5 (Солнечный Лотос)
- * - Подсказка хода при простое, каскадные комбо и магазин за монеты (лейки и +5 ходов)
+ * Цветочная Клумба: Узоры Сада (Match-3 + Мой Сад v7.0)
+ * - 50+ уровней (50 узорных клумб + Бесконечный Сад) с Картой Клумб и звёздами (1-3 ★)
+ * - Бонус-цветы: Match-4 (ряд/столбец + луч), T/L (бомба + волна), Match-5 (Солнечный Лотос)
+ * - Мета-игра «Мой Сад»: трать монеты на расчистку и обустройство дачной усадьбы
  * - Оркестровая садовая музыка + хрустальные капли и шелест лепестков
  */
 
@@ -450,6 +450,115 @@
         }
     ];
 
+    const CAMPAIGN_LEVEL_COUNT = 50;
+
+    const EXTRA_MASKS = [
+        [[0,1,1,1,1,1,0],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[0,1,1,1,1,1,0]],
+        [[1,1,0,1,0,1,1],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[0,1,1,1,1,1,0],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[1,1,0,1,0,1,1]],
+        [[0,0,1,1,1,0,0],[0,1,1,1,1,1,0],[1,1,1,1,1,1,1],[1,1,1,0,1,1,1],[1,1,1,1,1,1,1],[0,1,1,1,1,1,0],[0,0,1,1,1,0,0]],
+        [[1,1,1,1,1,1,1],[1,1,1,0,1,1,1],[1,1,1,1,1,1,1],[1,0,1,1,1,0,1],[1,1,1,1,1,1,1],[1,1,1,0,1,1,1],[1,1,1,1,1,1,1]],
+        [[1,1,1,0,1,1,1],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[0,1,1,1,1,1,0],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[1,1,1,0,1,1,1]],
+        [[0,1,1,1,1,1,0],[0,1,1,1,1,1,0],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[0,1,1,1,1,1,0],[0,1,1,1,1,1,0]],
+        [[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[0,1,1,1,1,1,0],[0,0,1,1,1,0,0],[0,1,1,1,1,1,0],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1]],
+        [[1,1,1,1,1,0,0],[1,1,1,1,1,1,0],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[0,1,1,1,1,1,1],[0,0,1,1,1,1,1]],
+        [[0,1,1,0,1,1,0],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[0,1,1,1,1,1,0],[0,0,1,1,1,0,0]],
+        [[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1]]
+    ];
+
+    const EXTRA_LEVEL_NAMES = [
+        'Клеверная Поляна', 'Корона Лета', 'Песочные Часы', 'Сиреневый Дворик', 'Медовая Аллея',
+        'Яблоневый Цвет', 'Ландышевый Склон', 'Звёздная Беседка', 'Утренняя Роса', 'Палитра Садовода',
+        'Васильковый Ручей', 'Вишнёвая Ветка', 'Тенистая Галерея', 'Золотой Павильон', 'Радужный Бордюр',
+        'Пионовый Остров', 'Серебряный Пруд', 'Шмель и Клевер', 'Тёплый Флигель', 'Изумрудный Венец',
+        'Цветение Тюльпанов', 'Ромашковый Холм', 'Жемчужный Мостик', 'Осенние Бархатцы', 'Солнечный Террас',
+        'Аромат Сирени', 'Бабочкин Вальс', 'Оранжерея Мечты', 'Триумф Сада', 'Гранд-Клумба'
+    ];
+
+    const GENERATED_CACHE = new Map();
+
+    function getLevelConfig(idx) {
+        if (idx < GARDEN_LEVELS.length) return GARDEN_LEVELS[idx];
+        if (GENERATED_CACHE.has(idx)) return GENERATED_CACHE.get(idx);
+
+        // Детерминированный генератор для уровней 21-50 и Бесконечного Сада (51+)
+        let seed = ((idx + 1) * 2654435761) >>> 0;
+        const nextRand = () => {
+            seed = (seed * 1664525 + 1013904223) >>> 0;
+            return seed / 4294967296;
+        };
+
+        const mask = EXTRA_MASKS[idx % EXTRA_MASKS.length];
+        const validCells = [];
+        for (let r = 0; r < GRID_SIZE; r++) {
+            for (let c = 0; c < GRID_SIZE; c++) {
+                if (mask[r][c] === 1) validCells.push({ r, c });
+            }
+        }
+
+        // Перемешиваем клетки детерминированно
+        for (let i = validCells.length - 1; i > 0; i--) {
+            const j = Math.floor(nextRand() * (i + 1));
+            const tmp = validCells[i];
+            validCells[i] = validCells[j];
+            validCells[j] = tmp;
+        }
+
+        const tier = Math.min(35, idx - GARDEN_LEVELS.length);
+        const stonesWanted = idx % 3 === 1 ? 0 : Math.min(6, 2 + Math.floor((tier % 9) / 2));
+        const frozenWanted = idx % 4 === 2 ? 0 : Math.min(8, 3 + Math.floor((tier % 10) / 2));
+
+        const stones = [];
+        const frozen = [];
+        const occupied = new Set();
+
+        for (let i = 0; i < validCells.length && stones.length < stonesWanted; i++) {
+            const cell = validCells[i];
+            // Не ставим сорняки в верхний крайний ряд, чтобы поток не стопорился
+            if (cell.r === 0) continue;
+            stones.push(cell);
+            occupied.add(`${cell.r},${cell.c}`);
+        }
+        for (let i = 0; i < validCells.length && frozen.length < frozenWanted; i++) {
+            const cell = validCells[i];
+            const k = `${cell.r},${cell.c}`;
+            if (!occupied.has(k)) {
+                frozen.push(cell);
+                occupied.add(k);
+            }
+        }
+
+        let goalType = 'flower';
+        if (stones.length > 0 && frozen.length > 0) goalType = 'stones_frozen_flower';
+        else if (stones.length > 0) goalType = 'stones_and_flower';
+        else if (frozen.length > 0) goalType = 'unfreeze_and_flower';
+
+        const targetFlowerId = idx % 5;
+        const targetCount = 24 + Math.min(20, Math.floor(tier * 0.55));
+        const moves = Math.min(38, 28 + Math.floor((stones.length + frozen.length) * 0.65));
+        const reward = Math.min(1200, 460 + (idx - GARDEN_LEVELS.length + 1) * 18);
+        const nameIdx = idx - GARDEN_LEVELS.length;
+        const name = nameIdx < EXTRA_LEVEL_NAMES.length
+            ? EXTRA_LEVEL_NAMES[nameIdx]
+            : `Бесконечный Сад #${idx + 1}`;
+
+        const cfg = {
+            level: idx + 1,
+            name,
+            mask,
+            stones,
+            frozen,
+            goalType,
+            targetFlowerId,
+            targetCount,
+            targetStones: stones.length,
+            targetFrozen: frozen.length,
+            moves,
+            reward
+        };
+        GENERATED_CACHE.set(idx, cfg);
+        return cfg;
+    }
+
     let canvas, ctx;
     let grid = [];
     let selectedCell = null;
@@ -470,6 +579,8 @@
 
     let bridge;
     let particles = [];
+    let beams = [];
+    let shockwaves = [];
     let popups = [];
     let butterflies = [];
     let swapAnim = null;
@@ -488,10 +599,8 @@
         window.flowerAudio.init();
         window.flowerSprites.init();
 
-        currentLevelIdx = bridge.loadCloudProgress('level', 0);
-        if (currentLevelIdx < 0 || currentLevelIdx >= GARDEN_LEVELS.length) currentLevelIdx = 0;
+        currentLevelIdx = Math.max(0, parseInt(bridge.loadCloudProgress('level', 0), 10) || 0);
         maxLevel = Math.max(currentLevelIdx, parseInt(bridge.loadCloudProgress('maxLevel', currentLevelIdx), 10) || 0);
-        if (maxLevel >= GARDEN_LEVELS.length) maxLevel = GARDEN_LEVELS.length - 1;
         const savedStars = bridge.loadCloudProgress('levelStars', {});
         levelStars = (savedStars && typeof savedStars === 'object') ? savedStars : {};
 
@@ -499,12 +608,49 @@
         bridge.setCoins(coins);
         canBoosterCount = bridge.loadCloudProgress('cans', 3);
 
+        window.klumbaAPI = {
+            getBridge: () => bridge,
+            getCoins: () => coins,
+            setCoins: (val) => {
+                coins = Math.max(0, parseInt(val, 10) || 0);
+                bridge.setCoins(coins);
+                updateUI();
+            },
+            spendCoins: (itemName, price) => {
+                bridge.coins = coins;
+                let ok = false;
+                bridge.makePurchase(itemName, price, () => {
+                    coins = bridge.getCoins();
+                    ok = true;
+                    updateUI();
+                });
+                return ok;
+            },
+            addCoins: (amount, silentToast = false) => {
+                coins += amount;
+                bridge.setCoins(coins);
+                if (!silentToast) bridge.showToast(`+${amount} монет!`);
+                updateUI();
+                return coins;
+            },
+            addCan: (amount = 1) => {
+                canBoosterCount += amount;
+                bridge.saveCloudProgress('cans', canBoosterCount);
+                updateUI();
+            },
+            getLevelNumber: () => currentLevelIdx + 1,
+            getAudio: () => window.flowerAudio
+        };
+
         initButterflies();
         syncAudioButtons();
         resetLevel(currentLevelIdx);
         setupEvents();
+        if (window.flowerGarden && typeof window.flowerGarden.init === 'function') {
+            window.flowerGarden.init(window.klumbaAPI);
+        }
 
-        bridge.hydrateCloudProgress(['level', 'maxLevel', 'levelStars', 'coins', 'cans'], (hydrated) => {
+        bridge.hydrateCloudProgress(['level', 'maxLevel', 'levelStars', 'coins', 'cans', 'garden'], (hydrated) => {
             if (!hydrated || typeof hydrated !== 'object') return;
             let changed = false;
             if (typeof hydrated.coins === 'number' && !Number.isNaN(hydrated.coins)) {
@@ -517,19 +663,23 @@
                 changed = true;
             }
             if (typeof hydrated.maxLevel === 'number' && !Number.isNaN(hydrated.maxLevel)) {
-                maxLevel = Math.max(maxLevel, Math.min(GARDEN_LEVELS.length - 1, hydrated.maxLevel));
+                maxLevel = Math.max(maxLevel, hydrated.maxLevel);
             }
             if (hydrated.levelStars && typeof hydrated.levelStars === 'object') {
                 Object.keys(hydrated.levelStars).forEach((k) => {
                     levelStars[k] = Math.max(levelStars[k] || 0, hydrated.levelStars[k] || 0);
                 });
             }
-            if (typeof hydrated.level === 'number' && hydrated.level >= 0 && hydrated.level < GARDEN_LEVELS.length) {
+            if (hydrated.garden && window.flowerGarden && typeof window.flowerGarden.onCloudHydrated === 'function') {
+                window.flowerGarden.onCloudHydrated(hydrated.garden);
+            }
+            if (typeof hydrated.level === 'number' && hydrated.level >= 0) {
                 maxLevel = Math.max(maxLevel, hydrated.level);
+                const curCfg = getLevelConfig(currentLevelIdx);
                 const canSwitchLevel = (
                     hydrated.level !== currentLevelIdx &&
                     score === 0 &&
-                    movesLeft === GARDEN_LEVELS[currentLevelIdx].moves &&
+                    movesLeft === curCfg.moves &&
                     !isProcessingMatches &&
                     !isGameOver &&
                     !isWon
@@ -598,7 +748,7 @@
             bridge.saveCloudProgress('maxLevel', maxLevel);
         }
         bridge.saveCloudProgress('level', currentLevelIdx);
-        const lvl = GARDEN_LEVELS[currentLevelIdx];
+        const lvl = getLevelConfig(currentLevelIdx);
 
         score = 0;
         movesLeft = lvl.moves;
@@ -611,6 +761,8 @@
         comboCount = 0;
         idleTime = 0;
         hintPair = null;
+        beams = [];
+        shockwaves = [];
         isCanMode = false;
         isProcessingMatches = false;
         document.getElementById('canBtn').classList.remove('active');
@@ -686,10 +838,12 @@
         if (!gridEl) return;
 
         let totalStars = 0;
-        const maxStars = GARDEN_LEVELS.length * 3;
+        const displayCount = Math.max(CAMPAIGN_LEVEL_COUNT, maxLevel + 5);
+        const maxStars = displayCount * 3;
         gridEl.innerHTML = '';
 
-        GARDEN_LEVELS.forEach((lvl, idx) => {
+        for (let idx = 0; idx < displayCount; idx++) {
+            const lvl = getLevelConfig(idx);
             const unlocked = idx <= maxLevel;
             const stars = levelStars[String(idx)] || 0;
             if (unlocked) totalStars += stars;
@@ -720,10 +874,10 @@
                 });
             }
             gridEl.appendChild(btn);
-        });
+        }
 
         if (summaryEl) {
-            summaryEl.textContent = `Открыто уровней: ${maxLevel + 1} из ${GARDEN_LEVELS.length} • Звёзд: ${totalStars}/${maxStars}`;
+            summaryEl.textContent = `Открыто клумб: ${maxLevel + 1} из ${displayCount} • Звёзд: ${totalStars}/${maxStars}`;
         }
         document.getElementById('levelsModal').classList.remove('hidden');
     }
@@ -905,10 +1059,20 @@
 
         document.getElementById('nextLevelBtn').addEventListener('click', () => {
             if (bridge.isAdShowing) return;
-            currentLevelIdx = (currentLevelIdx + 1) % GARDEN_LEVELS.length;
+            currentLevelIdx = currentLevelIdx + 1;
             bridge.saveCloudProgress('level', currentLevelIdx);
             bridge.showInterstitialAd(() => resetLevel(currentLevelIdx));
         });
+
+        const victoryGardenBtn = document.getElementById('victoryGardenBtn');
+        if (victoryGardenBtn) {
+            victoryGardenBtn.addEventListener('click', () => {
+                document.getElementById('victoryModal').classList.add('hidden');
+                if (window.flowerGarden && typeof window.flowerGarden.open === 'function') {
+                    window.flowerGarden.open();
+                }
+            });
+        }
     }
 
     function handleCellTap(r, c) {
@@ -1226,12 +1390,21 @@
 
             if (cell.power === 'row') {
                 spawnPopup(CANVAS_SIZE / 2, (item.r + 0.5) * CELL_SIZE, 'РЯД!', '#ffd54f');
+                beams.push({ kind: 'row', r: item.r, life: 1.0 });
                 for (let cc = 0; cc < GRID_SIZE; cc++) enqueue(item.r, cc, 'power');
             } else if (cell.power === 'col') {
                 spawnPopup((item.c + 0.5) * CELL_SIZE, CANVAS_SIZE / 2, 'СТОЛБЕЦ!', '#ffd54f');
+                beams.push({ kind: 'col', c: item.c, life: 1.0 });
                 for (let rr = 0; rr < GRID_SIZE; rr++) enqueue(rr, item.c, 'power');
             } else if (cell.power === 'bomb') {
                 spawnPopup((item.c + 0.5) * CELL_SIZE, (item.r + 0.5) * CELL_SIZE, 'БУКЕТ-БУМ!', '#ff6f00');
+                shockwaves.push({
+                    x: (item.c + 0.5) * CELL_SIZE,
+                    y: (item.r + 0.5) * CELL_SIZE,
+                    maxR: CELL_SIZE * 2.2,
+                    color: '#ffb300',
+                    life: 1.0
+                });
                 for (let dr = -1; dr <= 1; dr++) {
                     for (let dc = -1; dc <= 1; dc++) enqueue(item.r + dr, item.c + dc, 'power');
                 }
@@ -1240,11 +1413,22 @@
                     ? sunTargetId
                     : pickDominantFlowerId();
                 spawnPopup(CANVAS_SIZE / 2, CANVAS_SIZE / 2, targetId === 'ALL' ? 'СОЛНЕЧНЫЙ ВЗРЫВ!' : 'СОЛНЕЧНЫЙ ЛОТОС!', '#ffd54f');
+                const sx = (item.c + 0.5) * CELL_SIZE;
+                const sy = (item.r + 0.5) * CELL_SIZE;
+                shockwaves.push({ x: sx, y: sy, maxR: CELL_SIZE * 3.4, color: '#ffee58', life: 1.0 });
                 for (let rr = 0; rr < GRID_SIZE; rr++) {
                     for (let cc = 0; cc < GRID_SIZE; cc++) {
                         const targetCell = grid[rr][cc];
                         if (!targetCell) continue;
                         if (targetId === 'ALL' || targetCell.id === targetId) {
+                            beams.push({
+                                kind: 'ray',
+                                x1: sx,
+                                y1: sy,
+                                x2: (cc + 0.5) * CELL_SIZE,
+                                y2: (rr + 0.5) * CELL_SIZE,
+                                life: 1.0
+                            });
                             enqueue(rr, cc, 'sun');
                         }
                     }
@@ -1257,7 +1441,7 @@
 
     function executeClearStep(matchCoords, blastTargets, spawns, comboLabel) {
         const token = levelToken;
-        const lvl = GARDEN_LEVELS[currentLevelIdx];
+        const lvl = getLevelConfig(currentLevelIdx);
 
         const spawnMap = new Map();
         spawns.forEach(sp => spawnMap.set(`${sp.r},${sp.c}`, sp));
@@ -1436,7 +1620,7 @@
     }
 
     function applyGravityAndRefill() {
-        const lvl = GARDEN_LEVELS[currentLevelIdx];
+        const lvl = getLevelConfig(currentLevelIdx);
 
         for (let c = 0; c < GRID_SIZE; c++) {
             let spawnCount = 0;
@@ -1483,7 +1667,7 @@
     function checkLevelStatus() {
         if (isWon || isGameOver) return;
 
-        const lvl = GARDEN_LEVELS[currentLevelIdx];
+        const lvl = getLevelConfig(currentLevelIdx);
         let won = false;
 
         if (lvl.goalType === 'flower') {
@@ -1519,14 +1703,18 @@
             const key = String(currentLevelIdx);
             levelStars[key] = Math.max(levelStars[key] || 0, starCount);
             bridge.saveCloudProgress('levelStars', levelStars);
-            if (currentLevelIdx + 1 < GARDEN_LEVELS.length && currentLevelIdx + 1 > maxLevel) {
+            if (currentLevelIdx + 1 > maxLevel) {
                 maxLevel = currentLevelIdx + 1;
                 bridge.saveCloudProgress('maxLevel', maxLevel);
             }
 
-            const isFinalLevel = currentLevelIdx === GARDEN_LEVELS.length - 1;
-            document.getElementById('victoryTitle').textContent = isFinalLevel ? 'Весь сад расцвёл!' : 'Клумба расцвела!';
-            document.getElementById('nextLevelBtnText').textContent = isFinalLevel ? 'НАЧАТЬ СНАЧАЛА' : 'СЛЕДУЮЩАЯ КЛУМБА';
+            const isCampaignEnd = currentLevelIdx === CAMPAIGN_LEVEL_COUNT - 1;
+            document.getElementById('victoryTitle').textContent = isCampaignEnd
+                ? 'Все 50 клумб пройдены!'
+                : 'Клумба расцвела!';
+            document.getElementById('nextLevelBtnText').textContent = isCampaignEnd
+                ? 'В БЕСКОНЕЧНЫЙ САД'
+                : 'СЛЕДУЮЩАЯ КЛУМБА';
             document.getElementById('victoryStars').innerHTML =
                 buildStarSVG(starCount >= 1) +
                 buildStarSVG(starCount >= 2) +
@@ -1546,8 +1734,13 @@
     }
 
     function updateUI() {
-        const lvl = GARDEN_LEVELS[currentLevelIdx];
-        document.getElementById('levelBadgeText').textContent = `Ур. ${lvl.level}/${GARDEN_LEVELS.length}: ${lvl.name}`;
+        const lvl = getLevelConfig(currentLevelIdx);
+        document.getElementById('levelBadgeText').textContent = currentLevelIdx < CAMPAIGN_LEVEL_COUNT
+            ? `Ур. ${lvl.level}/${CAMPAIGN_LEVEL_COUNT}: ${lvl.name}`
+            : `Ур. ${lvl.level}: ${lvl.name}`;
+        if (window.flowerGarden && typeof window.flowerGarden.syncBadge === 'function') {
+            window.flowerGarden.syncBadge();
+        }
         document.getElementById('scoreVal').textContent = score;
         document.getElementById('coinsVal').textContent = coins;
         document.getElementById('movesText').textContent = `${movesLeft} ходов`;
@@ -1785,6 +1978,16 @@
             if (pop.alpha <= 0) popups.splice(i, 1);
         }
 
+        for (let i = beams.length - 1; i >= 0; i--) {
+            beams[i].life -= dt * 3.1;
+            if (beams[i].life <= 0) beams.splice(i, 1);
+        }
+
+        for (let i = shockwaves.length - 1; i >= 0; i--) {
+            shockwaves[i].life -= dt * 2.8;
+            if (shockwaves[i].life <= 0) shockwaves.splice(i, 1);
+        }
+
         if (!isProcessingMatches && !swapAnim && !isGameOver && !isWon && !isCanMode) {
             idleTime += dt;
             if (idleTime >= 4.8 && !hintPair) {
@@ -1808,6 +2011,50 @@
 
         drawBoardBackground();
         drawFlowers();
+
+        beams.forEach(b => {
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, b.life);
+            if (b.kind === 'row') {
+                const cy = (b.r + 0.5) * CELL_SIZE;
+                const grad = ctx.createLinearGradient(0, cy - 22, 0, cy + 22);
+                grad.addColorStop(0, 'rgba(255, 235, 59, 0)');
+                grad.addColorStop(0.5, 'rgba(255, 241, 118, 0.85)');
+                grad.addColorStop(1, 'rgba(255, 235, 59, 0)');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, cy - 22, CANVAS_SIZE, 44);
+            } else if (b.kind === 'col') {
+                const cx = (b.c + 0.5) * CELL_SIZE;
+                const grad = ctx.createLinearGradient(cx - 22, 0, cx + 22, 0);
+                grad.addColorStop(0, 'rgba(255, 235, 59, 0)');
+                grad.addColorStop(0.5, 'rgba(255, 241, 118, 0.85)');
+                grad.addColorStop(1, 'rgba(255, 235, 59, 0)');
+                ctx.fillStyle = grad;
+                ctx.fillRect(cx - 22, 0, 44, CANVAS_SIZE);
+            } else if (b.kind === 'ray') {
+                ctx.strokeStyle = '#ffee58';
+                ctx.lineWidth = 4 * b.life;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(b.x1, b.y1);
+                ctx.lineTo(b.x2, b.y2);
+                ctx.stroke();
+            }
+            ctx.restore();
+        });
+
+        shockwaves.forEach(s => {
+            ctx.save();
+            const progress = 1 - Math.max(0, s.life);
+            const r = Math.max(6, s.maxR * progress);
+            ctx.globalAlpha = Math.max(0, s.life * 0.85);
+            ctx.strokeStyle = s.color;
+            ctx.lineWidth = 6 * s.life;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+        });
 
         // Порхающие садовые бабочки поверх цветочных краёв
         butterflies.forEach(b => {
@@ -1849,7 +2096,7 @@
     }
 
     function drawBoardBackground() {
-        const lvl = GARDEN_LEVELS[currentLevelIdx];
+        const lvl = getLevelConfig(currentLevelIdx);
 
         // Светлый солнечный газон за пределами фигурной клумбы
         const lawnGrad = ctx.createLinearGradient(0, 0, CANVAS_SIZE, CANVAS_SIZE);
