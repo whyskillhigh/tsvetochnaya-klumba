@@ -40,14 +40,20 @@ class FlowerSprites {
         this.drawStone(sCtx, 32, 32, 25);
         this.cache.set(98, stoneCanvas);
 
-        // СПРАЙТ СОЛНЕЧНОГО ЛОТОСА (Powerup ID 99)
-        const sunCanvas = document.createElement('canvas');
-        sunCanvas.width = stoneSize;
-        sunCanvas.height = stoneSize;
-        const sunCtx = sunCanvas.getContext('2d');
-        sunCtx.scale(this.dpr, this.dpr);
-        this.drawSunLotus(sunCtx, 32, 32, 25);
-        this.cache.set(99, sunCanvas);
+        // СПРАЙТЫ БОНУСНЫХ НАСЕКОМЫХ И ОСОБЫХ ЦВЕТОВ (95-99)
+        const mkBonus = (drawFn) => {
+            const c = document.createElement('canvas');
+            c.width = stoneSize;
+            c.height = stoneSize;
+            const bCtx = c.getContext('2d');
+            bCtx.scale(this.dpr, this.dpr);
+            drawFn(bCtx, 32, 32, 25);
+            return c;
+        };
+        this.cache.set(95, mkBonus((c, x, y, r) => this.drawBumblebee(c, x, y, r, 'row')));
+        this.cache.set(96, mkBonus((c, x, y, r) => this.drawBumblebee(c, x, y, r, 'col')));
+        this.cache.set(97, mkBonus((c, x, y, r) => this.drawDandelion(c, x, y, r)));
+        this.cache.set(99, mkBonus((c, x, y, r) => this.drawSunLotus(c, x, y, r)));
     }
 
     get(id) {
@@ -407,6 +413,180 @@ class FlowerSprites {
         ctx.restore();
     }
 
+    // 95/96. ЗОЛОТОЙ ШМЕЛЬ (Бонус за 4 в ряд — летит по ряду или столбцу)
+    drawBumblebee(ctx, cx, cy, r, dir = 'row') {
+        ctx.save();
+        ctx.translate(cx, cy);
+        if (dir === 'col') ctx.rotate(-Math.PI / 2);
+
+        // Тёплое медовое сияние под шмелём
+        const glow = ctx.createRadialGradient(0, 0, r * 0.2, 0, 0, r * 1.05);
+        glow.addColorStop(0, 'rgba(255, 224, 130, 0.72)');
+        glow.addColorStop(1, 'rgba(255, 224, 130, 0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 1.05, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Золотые лучи траектории по краям (показывают направление полёта без грубых стрелок)
+        ctx.strokeStyle = 'rgba(255, 213, 79, 0.7)';
+        ctx.lineWidth = 2.2;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.96, 0);
+        ctx.lineTo(-r * 0.72, 0);
+        ctx.moveTo(r * 0.72, 0);
+        ctx.lineTo(r * 0.96, 0);
+        ctx.stroke();
+
+        // Прозрачные радужные крылышки
+        [-1, 1].forEach(side => {
+            ctx.save();
+            ctx.translate(-r * 0.04, side * r * 0.44);
+            ctx.rotate(side * -0.35);
+            const wg = ctx.createRadialGradient(0, 0, 2, 0, 0, r * 0.54);
+            wg.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+            wg.addColorStop(1, 'rgba(179, 229, 252, 0.72)');
+            ctx.fillStyle = wg;
+            ctx.strokeStyle = '#5c8a9e';
+            ctx.lineWidth = 1.4;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, r * 0.34, r * 0.50, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+        });
+
+        // Пушистое полосатое брюшко (3D объём)
+        ctx.save();
+        ctx.beginPath();
+        ctx.ellipse(-r * 0.05, 0, r * 0.68, r * 0.44, 0, 0, Math.PI * 2);
+        ctx.clip();
+
+        const bodyG = ctx.createRadialGradient(-r * 0.1, -r * 0.18, r * 0.1, 0, 0, r * 0.72);
+        bodyG.addColorStop(0, '#fff59d');
+        bodyG.addColorStop(0.55, '#ffb300');
+        bodyG.addColorStop(1, '#e65100');
+        ctx.fillStyle = bodyG;
+        ctx.fillRect(-r, -r, r * 2, r * 2);
+
+        // Бархатные тёмные полоски
+        ctx.fillStyle = '#3e2723';
+        ctx.fillRect(-r * 0.42, -r * 0.5, r * 0.16, r);
+        ctx.fillRect(-r * 0.10, -r * 0.5, r * 0.17, r);
+        ctx.fillRect(r * 0.24, -r * 0.5, r * 0.18, r);
+        ctx.restore();
+
+        // Контур брюшка и жало
+        ctx.strokeStyle = '#3e2723';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(-r * 0.05, 0, r * 0.68, r * 0.44, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#3e2723';
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.72, -r * 0.08);
+        ctx.lineTo(-r * 0.90, 0);
+        ctx.lineTo(-r * 0.72, r * 0.08);
+        ctx.closePath();
+        ctx.fill();
+
+        // Головка с блестящими глазками и усиками
+        ctx.beginPath();
+        ctx.arc(r * 0.56, 0, r * 0.25, 0, Math.PI * 2);
+        ctx.fillStyle = '#4e342e';
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(r * 0.63, -r * 0.10, r * 0.075, 0, Math.PI * 2);
+        ctx.arc(r * 0.63, r * 0.10, r * 0.075, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#3e2723';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(r * 0.72, -r * 0.12);
+        ctx.quadraticCurveTo(r * 0.95, -r * 0.34, r * 0.88, -r * 0.42);
+        ctx.moveTo(r * 0.72, r * 0.12);
+        ctx.quadraticCurveTo(r * 0.95, r * 0.34, r * 0.88, r * 0.42);
+        ctx.stroke();
+
+        ctx.restore();
+    }
+
+    // 97. ПУШИСТЫЙ ОДУВАНЧИК (Бонус за Т/Г — разлетается пухом во все стороны 3x3)
+    drawDandelion(ctx, cx, cy, r) {
+        ctx.save();
+        ctx.translate(cx, cy);
+
+        // Тень и зелёная чашечка снизу
+        ctx.beginPath();
+        ctx.arc(0, r * 0.12, r * 0.88, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(40, 65, 15, 0.24)';
+        ctx.fill();
+
+        ctx.fillStyle = '#558b2f';
+        ctx.strokeStyle = '#2e5b1e';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.32, r * 0.62);
+        ctx.lineTo(0, r * 0.90);
+        ctx.lineTo(r * 0.32, r * 0.62);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Внешний нежный пушистый ореол
+        const aura = ctx.createRadialGradient(0, 0, r * 0.2, 0, 0, r * 0.95);
+        aura.addColorStop(0, 'rgba(255, 253, 231, 0.95)');
+        aura.addColorStop(0.65, 'rgba(255, 249, 196, 0.65)');
+        aura.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.fillStyle = aura;
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 0.95, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 12 лучиков-зонтиков одуванчика
+        for (let i = 0; i < 12; i++) {
+            const a = (i / 12) * Math.PI * 2;
+            const px = Math.cos(a) * r * 0.72;
+            const py = Math.sin(a) * r * 0.72;
+            ctx.strokeStyle = '#8d6e63';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(Math.cos(a) * r * 0.24, Math.sin(a) * r * 0.24);
+            ctx.lineTo(px, py);
+            ctx.stroke();
+
+            // Пушистый белый зонтик на кончике
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#b0bec5';
+            ctx.lineWidth = 1.1;
+            ctx.beginPath();
+            ctx.arc(px, py, r * 0.19, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        // Тёплое золотое сердечко пыльцы в центре
+        const core = ctx.createRadialGradient(-r * 0.08, -r * 0.08, 1, 0, 0, r * 0.34);
+        core.addColorStop(0, '#fffde7');
+        core.addColorStop(0.6, '#ffd54f');
+        core.addColorStop(1, '#fb8c00');
+        ctx.fillStyle = core;
+        ctx.strokeStyle = '#ef6c00';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 0.33, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.restore();
+    }
+
     // 99. СОЛНЕЧНЫЙ ЛОТОС (Match-5 супер-цветок)
     drawSunLotus(ctx, cx, cy, r) {
         ctx.save();
@@ -449,75 +629,33 @@ class FlowerSprites {
         ctx.restore();
     }
 
-    // НАЛОЖЕНИЕ ЗНАЧКА БОНУСА (строка / столбец / букет-бомба / солнечный лотос)
+    // МЯГКОЕ АНИМИРОВАННОЕ СИЯНИЕ ДЛЯ ОСОБЫХ МОДЕЛЕК (без грубых стрелок поверх цветов)
     drawPowerAura(ctx, power, cellSize, nowSec) {
         const r = cellSize * 0.43;
         ctx.save();
-        const pulse = 1 + Math.sin(nowSec * 6) * 0.06;
-
         if (power === 'sun') {
             ctx.rotate(nowSec * 1.4);
-            ctx.strokeStyle = 'rgba(255, 238, 88, 0.85)';
-            ctx.lineWidth = 2.4;
-            ctx.setLineDash([5, 4]);
-            ctx.beginPath();
-            ctx.arc(0, 0, r * 1.03, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.restore();
-            return;
-        }
-
-        if (power === 'bomb') {
-            ctx.scale(pulse, pulse);
-            ctx.strokeStyle = '#ff6f00';
-            ctx.fillStyle = 'rgba(255, 224, 130, 0.36)';
+            ctx.strokeStyle = 'rgba(255, 241, 118, 0.85)';
             ctx.lineWidth = 2.2;
+            ctx.setLineDash([4, 4]);
             ctx.beginPath();
-            for (let i = 0; i < 16; i++) {
-                const rad = i % 2 === 0 ? r * 1.05 : r * 0.80;
-                const a = (i / 16) * Math.PI * 2;
-                const px = Math.cos(a) * rad;
-                const py = Math.sin(a) * rad;
-                if (i === 0) ctx.moveTo(px, py);
-                else ctx.lineTo(px, py);
-            }
-            ctx.closePath();
-            ctx.fill();
+            ctx.arc(0, 0, r * 1.02, 0, Math.PI * 2);
             ctx.stroke();
-            ctx.restore();
-            return;
-        }
-
-        // 'row' или 'col': золотой ободок и чёткие стрелки направления
-        ctx.beginPath();
-        ctx.arc(0, 0, r * pulse, 0, Math.PI * 2);
-        ctx.strokeStyle = '#ffd54f';
-        ctx.lineWidth = 2.6;
-        ctx.stroke();
-
-        ctx.fillStyle = '#fffde7';
-        ctx.strokeStyle = '#e65100';
-        ctx.lineWidth = 1.6;
-        const drawTip = (tx, ty, angle) => {
-            ctx.save();
-            ctx.translate(tx, ty);
-            ctx.rotate(angle);
+        } else if (power === 'bomb') {
+            const pulse = 1 + Math.sin(nowSec * 5) * 0.05;
+            ctx.scale(pulse, pulse);
+            ctx.strokeStyle = 'rgba(255, 236, 179, 0.75)';
+            ctx.lineWidth = 1.8;
             ctx.beginPath();
-            ctx.moveTo(6, 0);
-            ctx.lineTo(-4, -5);
-            ctx.lineTo(-4, 5);
-            ctx.closePath();
-            ctx.fill();
+            ctx.arc(0, 0, r * 0.96, 0, Math.PI * 2);
             ctx.stroke();
-            ctx.restore();
-        };
-
-        if (power === 'row') {
-            drawTip(-r * 0.94, 0, Math.PI);
-            drawTip(r * 0.94, 0, 0);
-        } else if (power === 'col') {
-            drawTip(0, -r * 0.94, -Math.PI / 2);
-            drawTip(0, r * 0.94, Math.PI / 2);
+        } else {
+            const alpha = 0.35 + 0.35 * Math.sin(nowSec * 7);
+            ctx.strokeStyle = `rgba(255, 213, 79, ${alpha})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.95, 0, Math.PI * 2);
+            ctx.stroke();
         }
         ctx.restore();
     }
